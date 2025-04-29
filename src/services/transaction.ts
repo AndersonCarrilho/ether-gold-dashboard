@@ -1,4 +1,3 @@
-
 import { EthereumProvider, Transaction, TransactionReceipt } from "@/types/ethereum";
 
 // ABI for ERC20 token transfer
@@ -109,6 +108,7 @@ export class TransactionService {
         from,
         to: tokenAddress,
         data,
+        value: "0x0", // Add the required value property with zero value for ERC20 transfers
       });
       
       const txHash = await this.provider.request({
@@ -120,6 +120,7 @@ export class TransactionService {
             data,
             gasPrice,
             gas: gasEstimate,
+            value: "0x0", // Also include zero value here for consistency
           },
         ],
       });

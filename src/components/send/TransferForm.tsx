@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useEthereum, ETH_TOKENS } from "@/hooks/use-ethereum";
 import { TransactionService } from "@/services/transaction";
@@ -94,6 +93,7 @@ const TransferForm: React.FC<TransferFormProps> = ({ onTransactionComplete }) =>
           from: walletState.accounts[0],
           to: token.address,
           data,
+          value: "0x0", // Adding the required value property
         });
       }
       

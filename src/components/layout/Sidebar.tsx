@@ -14,7 +14,7 @@ import {
 import {
   Wallet,
   Send,
-  Receive,
+  Download,
   Activity,
   CreditCard,
   Settings,
@@ -34,7 +34,7 @@ const menuItems = [
   },
   {
     title: "Receive",
-    icon: Receive,
+    icon: Download,
     path: "/receive",
   },
   {

@@ -1,18 +1,18 @@
 
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { useEthereum } from "@/hooks/use-ethereum";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { Copy, Receive } from "lucide-react";
-import QRCode from "qrcode.js";
+import { Copy, Download } from "lucide-react";
+import QRCode from "qrcode";
 
 const ReceivePage = () => {
   const { walletState } = useEthereum();
   const { toast } = useToast();
-  const qrRef = useRef<HTMLDivElement>(null);
+  const qrRef = useRef<HTMLCanvasElement>(null);
   const { connected, accounts } = walletState;
   
   const copyToClipboard = async () => {
@@ -30,24 +30,29 @@ const ReceivePage = () => {
   };
   
   // Generate QR code when component mounts or when address changes
-  const generateQR = () => {
+  const generateQR = async () => {
     if (qrRef.current && connected && accounts.length) {
-      qrRef.current.innerHTML = "";
-      QRCode(qrRef.current, {
-        text: accounts[0],
-        width: 196,
-        height: 196,
-        colorDark: "#D4AF37",
-        colorLight: "#222222",
-        correctLevel: QRCode.CorrectLevel.H,
-      });
+      try {
+        await QRCode.toCanvas(qrRef.current, accounts[0], {
+          width: 196,
+          margin: 1,
+          color: {
+            dark: "#D4AF37",
+            light: "#222222",
+          },
+        });
+      } catch (err) {
+        console.error("Error generating QR code:", err);
+      }
     }
   };
   
   // Use effect to generate QR code
-  if (qrRef.current && connected && accounts.length) {
-    setTimeout(() => generateQR(), 100);
-  }
+  useEffect(() => {
+    if (connected && accounts.length) {
+      generateQR();
+    }
+  }, [connected, accounts]);
   
   return (
     <DashboardLayout>
@@ -65,17 +70,15 @@ const ReceivePage = () => {
             <Card className="card-hover">
               <CardHeader>
                 <CardTitle className="flex items-center">
-                  <Receive className="mr-2 h-5 w-5 text-gold" />
+                  <Download className="mr-2 h-5 w-5 text-gold" />
                   Receive Assets
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="flex justify-center">
-                  <div 
-                    ref={qrRef} 
-                    className="bg-secondary rounded-lg p-3"
-                    style={{ width: 202, height: 202 }}
-                  />
+                  <div className="bg-secondary rounded-lg p-3" style={{ width: 202, height: 202 }}>
+                    <canvas ref={qrRef} />
+                  </div>
                 </div>
                 
                 <div className="space-y-2">

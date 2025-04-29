@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { 
   Send, 
-  Receive, 
+  Download, 
   Check, 
   Info 
 } from "lucide-react";
@@ -63,7 +63,7 @@ const TransactionRow: React.FC<TransactionRowProps> = ({
             {type === "send" ? (
               <Send size={16} className="text-red-500" />
             ) : (
-              <Receive size={16} className="text-green-500" />
+              <Download size={16} className="text-green-500" />
             )}
           </div>
           <div>
