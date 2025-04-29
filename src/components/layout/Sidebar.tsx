@@ -1,0 +1,100 @@
+
+import {
+  Sidebar as ShadcnSidebar,
+  SidebarContent,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarMenu,
+  SidebarMenuItem,
+  SidebarMenuButton,
+  SidebarTrigger,
+} from "@/components/ui/sidebar";
+
+import {
+  Wallet,
+  Send,
+  Receive,
+  Activity,
+  CreditCard,
+  Settings,
+} from "lucide-react";
+import { useLocation, useNavigate } from "react-router-dom";
+
+const menuItems = [
+  {
+    title: "Wallet",
+    icon: Wallet,
+    path: "/",
+  },
+  {
+    title: "Send",
+    icon: Send,
+    path: "/send",
+  },
+  {
+    title: "Receive",
+    icon: Receive,
+    path: "/receive",
+  },
+  {
+    title: "Transactions",
+    icon: Activity,
+    path: "/transactions",
+  },
+  {
+    title: "Tokens",
+    icon: CreditCard,
+    path: "/tokens",
+  },
+  {
+    title: "Settings",
+    icon: Settings,
+    path: "/settings",
+  },
+];
+
+const Sidebar = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  return (
+    <>
+      <ShadcnSidebar className="border-r border-border/50">
+        <div className="flex h-16 items-center justify-center border-b border-border/50">
+          <SidebarTrigger className="h-6 w-6 text-gold" />
+          <h1 className="font-bold text-xl ml-3 gold-gradient">EtherGold</h1>
+        </div>
+
+        <SidebarContent className="py-4">
+          <SidebarGroup>
+            <SidebarGroupLabel className="px-6 text-gold-light">
+              Dashboard
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {menuItems.map((item) => (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton
+                      onClick={() => navigate(item.path)}
+                      className={`${
+                        location.pathname === item.path
+                          ? "bg-gold/10 text-gold"
+                          : ""
+                      }`}
+                    >
+                      <item.icon className="h-5 w-5 mr-2" />
+                      <span>{item.title}</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        </SidebarContent>
+      </ShadcnSidebar>
+    </>
+  );
+};
+
+export default Sidebar;
