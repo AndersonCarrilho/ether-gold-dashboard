@@ -60,7 +60,7 @@ const Sidebar = () => {
 
   return (
     <>
-      <ShadcnSidebar className="border-r border-border/50">
+      <ShadcnSidebar className="border-r border-border/50 bg-sidebar text-sidebar-foreground">
         <div className="flex h-16 items-center justify-center border-b border-border/50">
           <SidebarTrigger className="h-6 w-6 text-gold" />
           <h1 className="font-bold text-xl ml-3 gold-gradient">EtherGold</h1>
@@ -80,7 +80,7 @@ const Sidebar = () => {
                       className={`${
                         location.pathname === item.path
                           ? "bg-gold/10 text-gold"
-                          : ""
+                          : "hover:bg-secondary/50 hover:text-gold-light"
                       }`}
                     >
                       <item.icon className="h-5 w-5 mr-2" />
