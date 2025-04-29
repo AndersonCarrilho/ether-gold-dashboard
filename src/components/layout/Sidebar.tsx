@@ -1,4 +1,3 @@
-
 import {
   Sidebar as ShadcnSidebar,
   SidebarContent,
@@ -18,39 +17,49 @@ import {
   Activity,
   CreditCard,
   Settings,
+  Home,
+  ArrowUpRight,
+  AreaChart,
+  Coins,
+  HardDrive,
 } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 
-const menuItems = [
+const sidebarItems = [
   {
-    title: "Wallet",
-    icon: Wallet,
-    path: "/",
+    title: "Dashboard",
+    href: "/",
+    icon: Home,
   },
   {
     title: "Send",
-    icon: Send,
-    path: "/send",
+    href: "/send",
+    icon: ArrowUpRight,
   },
   {
     title: "Receive",
+    href: "/receive",
     icon: Download,
-    path: "/receive",
   },
   {
     title: "Transactions",
-    icon: Activity,
-    path: "/transactions",
+    href: "/transactions",
+    icon: AreaChart,
   },
   {
     title: "Tokens",
-    icon: CreditCard,
-    path: "/tokens",
+    href: "/tokens",
+    icon: Coins,
+  },
+  {
+    title: "Hardhat Sim",
+    href: "/hardhat",
+    icon: HardDrive,
   },
   {
     title: "Settings",
+    href: "/settings",
     icon: Settings,
-    path: "/settings",
   },
 ];
 
@@ -73,12 +82,12 @@ const Sidebar = () => {
             </SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
-                {menuItems.map((item) => (
+                {sidebarItems.map((item) => (
                   <SidebarMenuItem key={item.title}>
                     <SidebarMenuButton
-                      onClick={() => navigate(item.path)}
+                      onClick={() => navigate(item.href)}
                       className={`${
-                        location.pathname === item.path
+                        location.pathname === item.href
                           ? "bg-gold/10 text-gold"
                           : "hover:bg-secondary/50 hover:text-gold-light"
                       }`}

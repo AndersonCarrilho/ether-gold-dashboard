@@ -11,6 +11,7 @@ import Transactions from "./pages/Transactions";
 import Tokens from "./pages/Tokens";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
+import HardhatSim from "./pages/HardhatSim";
 import { useEffect } from "react";
 
 const queryClient = new QueryClient();
@@ -34,6 +35,7 @@ const App = () => {
             <Route path="/transactions" element={<Transactions />} />
             <Route path="/tokens" element={<Tokens />} />
             <Route path="/settings" element={<Settings />} />
+            <Route path="/hardhat" element={<HardhatSim />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

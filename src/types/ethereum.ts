@@ -17,7 +17,7 @@ export interface WalletState {
 export interface Transaction {
   from: string;
   to: string;
-  value: string; // in wei
+  value?: string; // tornando o value opcional para compatibilidade
   gasPrice?: string;
   gasLimit?: string;
   data?: string;

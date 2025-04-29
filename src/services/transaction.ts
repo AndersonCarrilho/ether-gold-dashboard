@@ -13,9 +13,15 @@ export class TransactionService {
   // Estimate gas for a transaction
   async estimateGas(transaction: Transaction): Promise<string> {
     try {
+      // Ensure the transaction has a value property even if it's not provided
+      const txWithValue = {
+        ...transaction,
+        value: transaction.value || "0x0", // Use provided value or default to 0
+      };
+
       const gas = await this.provider.request({
         method: "eth_estimateGas",
-        params: [transaction],
+        params: [txWithValue],
       });
       return gas;
     } catch (error) {
