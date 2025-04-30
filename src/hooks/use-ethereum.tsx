@@ -217,17 +217,27 @@ export const useEthereum = () => {
         provider: null,
       });
       
-      // Force disconnection if we're on MetaMask mobile
+      // For MetaMask mobile and other wallets, we can try to clear the connection
+      // using the standard method if available
       if (window.ethereum && window.ethereum.isMetaMask) {
+        console.log("Attempting to force disconnect MetaMask");
+        
+        // Try to clear the connection state if provider has such a method
+        // Some wallet providers may have custom methods for this
         try {
-          // This is a workaround to force disconnect on some wallet providers
-          console.log("Attempting to force disconnect MetaMask");
-          // We need to reset the connection state in the provider if possible
-          if (typeof window.ethereum._handleDisconnect === 'function') {
-            window.ethereum._handleDisconnect();
+          // Request the wallet to disconnect if it has such a method
+          if (typeof window.ethereum.request === 'function') {
+            // Some wallets support this method
+            window.ethereum.request({
+              method: "wallet_requestPermissions",
+              params: [{ eth_accounts: {} }]
+            }).catch((err: any) => {
+              // Ignore errors since this is just an attempt
+              console.log("Permission request failed, continuing with disconnect", err);
+            });
           }
-        } catch (error) {
-          console.error("Error while forcing MetaMask disconnect:", error);
+        } catch (innerError) {
+          console.error("Error while trying to force MetaMask disconnect:", innerError);
         }
       }
       
