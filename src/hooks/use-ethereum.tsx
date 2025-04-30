@@ -203,8 +203,9 @@ export const useEthereum = () => {
     }
   };
 
-  // Disconnect wallet
+  // Disconnect wallet - Implementação corrigida
   const disconnectWallet = () => {
+    // Limpa completamente o estado da carteira
     setWalletState({
       accounts: [],
       balance: "0",
@@ -212,6 +213,9 @@ export const useEthereum = () => {
       connected: false,
       provider: null,
     });
+    
+    console.log("Disconnecting wallet - state reset");
+    
     toast({
       title: "Wallet Disconnected",
       description: "Your wallet has been disconnected",
@@ -241,8 +245,7 @@ export const useEthereum = () => {
   useEffect(() => {
     if (typeof window !== "undefined" && window.ethereum) {
       const provider = window.ethereum;
-      setWalletState((prev) => ({ ...prev, provider }));
-
+      
       // Set up event listeners
       if (provider.on) {
         provider.on("accountsChanged", handleAccountsChanged);

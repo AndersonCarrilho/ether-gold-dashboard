@@ -32,6 +32,10 @@ const Header = () => {
     return "ET";
   };
 
+  const handleDisconnect = () => {
+    disconnectWallet();
+  };
+
   return (
     <header className="border-b border-border/50 p-4">
       <div className="flex items-center justify-between">
@@ -89,7 +93,7 @@ const Header = () => {
                     </div>
                   </div>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={disconnectWallet}>
+                  <DropdownMenuItem onClick={handleDisconnect}>
                     Disconnect
                   </DropdownMenuItem>
                 </DropdownMenuContent>

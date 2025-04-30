@@ -25,11 +25,15 @@ const WalletGenerator = () => {
     }
 
     try {
+      console.log("Starting wallet generation process...");
+      
       // Show a toast to indicate we're generating wallets
       const loadingToast = toast.loading(`Generating ${walletCount} wallets...`);
 
       // Generate the wallets - ensure we await the result
       const result = await generateWallets(parseInt(walletCount), initialBalance);
+      
+      console.log("Generation complete, dismissing loading toast");
       
       // Dismiss the loading toast
       toast.dismiss(loadingToast);

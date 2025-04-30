@@ -33,17 +33,22 @@ export const useWalletGenerator = () => {
     setIsLoading(true);
     try {
       console.log(`Generating ${count} wallets with ${initialBalance} ETH each...`);
+      
+      // Clear existing wallets before generating new ones to avoid confusion
+      setWallets([]); 
+      
       const newWallets = await walletGenerator.generateWallets(count, initialBalance);
       console.log("Generated wallets:", newWallets);
       
       // Clear any existing toast notifications
       toast.dismiss();
       
-      // Update state with new wallets - this is critical for the UI update
+      // Update state with new wallets - critical for UI update
       setWallets(newWallets);
       return newWallets;
     } catch (error) {
       console.error("Error generating wallets:", error);
+      toast.error("Failed to generate wallets");
       throw error;
     } finally {
       setIsLoading(false);
