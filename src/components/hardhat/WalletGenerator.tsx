@@ -30,22 +30,29 @@ const WalletGenerator = () => {
       // Show a toast to indicate we're generating wallets
       const loadingToast = toast.loading(`Generating ${walletCount} wallets...`);
 
-      // Generate the wallets - ensure we await the result
-      const result = await generateWallets(parseInt(walletCount), initialBalance);
-      
-      console.log("Generation complete, dismissing loading toast");
-      
-      // Dismiss the loading toast
-      toast.dismiss(loadingToast);
-      
-      if (result && result.length > 0) {
-        // Show success toast
-        toast.success(`Successfully generated ${result.length} wallets with ${initialBalance} ETH each`);
-        console.log(`Wallets generated successfully: ${result.length} wallets`);
-      } else {
-        toast.error("No wallets were generated");
-        console.error("No wallets were generated");
-      }
+      // Generate the wallets with a slight delay to ensure UI updates
+      setTimeout(async () => {
+        try {
+          const result = await generateWallets(parseInt(walletCount), initialBalance);
+          console.log("Generation complete, dismissing loading toast");
+          
+          // Dismiss the loading toast
+          toast.dismiss(loadingToast);
+          
+          if (result && result.length > 0) {
+            // Show success toast
+            toast.success(`Successfully generated ${result.length} wallets with ${initialBalance} ETH each`);
+            console.log(`Wallets generated successfully: ${result.length} wallets`);
+          } else {
+            toast.error("No wallets were generated");
+            console.error("No wallets were generated");
+          }
+        } catch (error) {
+          console.error("Error in delayed wallet generation:", error);
+          toast.dismiss(loadingToast);
+          toast.error("Failed to generate wallets");
+        }
+      }, 500); // Small delay to let UI update
     } catch (error) {
       console.error("Error generating wallets:", error);
       toast.error("Failed to generate wallets");

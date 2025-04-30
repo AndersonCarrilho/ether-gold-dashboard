@@ -33,7 +33,9 @@ const Header = () => {
   };
 
   const handleDisconnect = () => {
-    disconnectWallet();
+    console.log("Disconnect button clicked in Header");
+    const success = disconnectWallet();
+    console.log("Disconnect result:", success);
   };
 
   return (
@@ -93,7 +95,7 @@ const Header = () => {
                     </div>
                   </div>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleDisconnect}>
+                  <DropdownMenuItem onClick={handleDisconnect} className="cursor-pointer">
                     Disconnect
                   </DropdownMenuItem>
                 </DropdownMenuContent>

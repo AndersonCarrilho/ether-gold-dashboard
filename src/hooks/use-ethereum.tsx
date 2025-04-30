@@ -203,23 +203,47 @@ export const useEthereum = () => {
     }
   };
 
-  // Disconnect wallet - Implementação corrigida
+  // Disconnect wallet - Fixed implementation
   const disconnectWallet = () => {
-    // Limpa completamente o estado da carteira
-    setWalletState({
-      accounts: [],
-      balance: "0",
-      chainId: "",
-      connected: false,
-      provider: null,
-    });
-    
-    console.log("Disconnecting wallet - state reset");
-    
-    toast({
-      title: "Wallet Disconnected",
-      description: "Your wallet has been disconnected",
-    });
+    try {
+      console.log("Disconnecting wallet - state reset initiated");
+      
+      // Completely reset wallet state to initial values
+      setWalletState({
+        accounts: [],
+        balance: "0",
+        chainId: "",
+        connected: false,
+        provider: null,
+      });
+      
+      // Force disconnection if we're on MetaMask mobile
+      if (window.ethereum && window.ethereum.isMetaMask) {
+        try {
+          // This is a workaround to force disconnect on some wallet providers
+          console.log("Attempting to force disconnect MetaMask");
+          // We need to reset the connection state in the provider if possible
+          if (typeof window.ethereum._handleDisconnect === 'function') {
+            window.ethereum._handleDisconnect();
+          }
+        } catch (error) {
+          console.error("Error while forcing MetaMask disconnect:", error);
+        }
+      }
+      
+      console.log("Disconnecting wallet - state reset completed");
+      
+      toast({
+        title: "Wallet Disconnected",
+        description: "Your wallet has been disconnected",
+      });
+      
+      // Return true to indicate success
+      return true;
+    } catch (error) {
+      console.error("Error during wallet disconnection:", error);
+      return false;
+    }
   };
 
   // Format address for display
