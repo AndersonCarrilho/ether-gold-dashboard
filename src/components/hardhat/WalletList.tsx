@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useWalletGenerator } from "@/hooks/use-wallet-generator";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,6 +21,7 @@ import {
 import { List, Copy, ArrowRightLeft } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import { toast } from "sonner";
 
 const WalletList = () => {
   const { wallets, swapEthToUsdt, isLoading } = useWalletGenerator();
@@ -29,10 +30,13 @@ const WalletList = () => {
   const [swapAmount, setSwapAmount] = useState("1.0");
 
   // Debug wallet list status
-  console.log("Current wallets in WalletList:", wallets);
+  useEffect(() => {
+    console.log("Current wallets in WalletList:", wallets);
+  }, [wallets]);
 
   const handleCopyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
+    toast.success("Copied to clipboard");
   };
 
   const handleOpenSwapDialog = (index: number) => {

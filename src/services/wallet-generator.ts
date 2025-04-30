@@ -46,6 +46,9 @@ export class WalletGenerator {
     console.log(`Generating ${count} wallets with ${initialEthBalance} ETH each...`);
     const wallets: WalletAccount[] = [];
 
+    // Add a small delay to simulate network latency and give the UI time to update
+    await new Promise(resolve => setTimeout(resolve, 500));
+
     for (let i = 0; i < count; i++) {
       try {
         const wallet = this.generateWallet();
@@ -57,6 +60,11 @@ export class WalletGenerator {
           usdtBalance: "0"
         };
         wallets.push(walletAccount);
+        
+        // Add a small delay between wallet generations to simulate network latency
+        if (i < count - 1) {
+          await new Promise(resolve => setTimeout(resolve, 100));
+        }
       } catch (error) {
         console.error("Error generating wallet:", error);
       }
@@ -72,6 +80,9 @@ export class WalletGenerator {
     ethAmount: string
   ): Promise<{ success: boolean; txHash: string; newUsdtBalance: string }> {
     try {
+      // Add a small delay to simulate transaction time
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
       // Simulate conversion rate (for demo purposes: 1 ETH = 2000 USDT)
       const usdtAmount = parseFloat(ethAmount) * 2000;
       

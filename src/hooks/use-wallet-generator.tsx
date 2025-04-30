@@ -27,7 +27,7 @@ export const useWalletGenerator = () => {
     if (!walletGenerator) {
       console.error("Wallet generator not initialized");
       toast.error("Wallet generator not initialized");
-      return;
+      return [];
     }
     
     setIsLoading(true);
@@ -36,10 +36,10 @@ export const useWalletGenerator = () => {
       const newWallets = await walletGenerator.generateWallets(count, initialBalance);
       console.log("Generated wallets:", newWallets);
       
-      // Clear toast notifications that might be showing "Generating wallets..."
+      // Clear any existing toast notifications
       toast.dismiss();
       
-      // Update state with new wallets
+      // Update state with new wallets - this is critical for the UI update
       setWallets(newWallets);
       return newWallets;
     } catch (error) {
