@@ -26,13 +26,22 @@ const WalletGenerator = () => {
 
     try {
       // Show a toast to indicate we're generating wallets
-      toast.loading(`Generating ${walletCount} wallets...`);
+      const loadingToast = toast.loading(`Generating ${walletCount} wallets...`);
 
       // Generate the wallets
-      await generateWallets(parseInt(walletCount), initialBalance);
+      const wallets = await generateWallets(parseInt(walletCount), initialBalance);
       
-      // Show success toast
-      toast.success(`Successfully generated ${walletCount} wallets with ${initialBalance} ETH each`);
+      // Dismiss the loading toast
+      toast.dismiss(loadingToast);
+      
+      if (wallets && wallets.length > 0) {
+        // Show success toast
+        toast.success(`Successfully generated ${wallets.length} wallets with ${initialBalance} ETH each`);
+        console.log(`Wallets generated successfully: ${wallets.length} wallets`);
+      } else {
+        toast.error("No wallets were generated");
+        console.error("No wallets were generated");
+      }
     } catch (error) {
       console.error("Error generating wallets:", error);
       toast.error("Failed to generate wallets");

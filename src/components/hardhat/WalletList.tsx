@@ -21,13 +21,15 @@ import {
 import { List, Copy, ArrowRightLeft } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { WalletAccount } from "@/services/wallet-generator";
 
 const WalletList = () => {
   const { wallets, swapEthToUsdt, isLoading } = useWalletGenerator();
   const [showSwapDialog, setShowSwapDialog] = useState(false);
   const [selectedWalletIndex, setSelectedWalletIndex] = useState<number | null>(null);
   const [swapAmount, setSwapAmount] = useState("1.0");
+
+  // Debug wallet list status
+  console.log("Current wallets in WalletList:", wallets);
 
   const handleCopyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
