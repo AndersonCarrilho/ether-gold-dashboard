@@ -28,32 +28,41 @@ export class WalletGenerator {
   private usdtAbi: any;
 
   constructor(networkKey: NetworkKey = "ethereum", abi: any) {
-    this.provider = new ethers.providers.JsonRpcProvider(RPC_URLS[networkKey]);
+    // Using a fake provider for simulation
+    this.provider = new ethers.providers.JsonRpcProvider();
     this.usdtAbi = abi;
+    console.log("WalletGenerator initialized with network:", networkKey);
   }
 
   // Create a new wallet
   generateWallet(): ethers.Wallet {
-    const wallet = ethers.Wallet.createRandom().connect(this.provider);
+    const wallet = ethers.Wallet.createRandom();
+    console.log("Generated new wallet:", wallet.address);
     return wallet;
   }
 
   // Create multiple wallets with simulated ETH balance
   async generateWallets(count: number, initialEthBalance: string = "10.0"): Promise<WalletAccount[]> {
+    console.log(`Generating ${count} wallets with ${initialEthBalance} ETH each...`);
     const wallets: WalletAccount[] = [];
-    const weiAmount = ethers.utils.parseEther(initialEthBalance);
 
     for (let i = 0; i < count; i++) {
-      const wallet = this.generateWallet();
-      wallets.push({
-        address: wallet.address,
-        privateKey: wallet.privateKey,
-        balance: initialEthBalance,
-        mnemonicPhrase: wallet.mnemonic?.phrase,
-        usdtBalance: "0"
-      });
+      try {
+        const wallet = this.generateWallet();
+        const walletAccount: WalletAccount = {
+          address: wallet.address,
+          privateKey: wallet.privateKey,
+          balance: initialEthBalance,
+          mnemonicPhrase: wallet.mnemonic?.phrase,
+          usdtBalance: "0"
+        };
+        wallets.push(walletAccount);
+      } catch (error) {
+        console.error("Error generating wallet:", error);
+      }
     }
 
+    console.log(`Successfully generated ${wallets.length} wallets`);
     return wallets;
   }
 
@@ -72,6 +81,8 @@ export class WalletGenerator {
       
       // Update the simulated USDT balance
       const newUsdtBalance = (parseFloat(fromWallet.usdtBalance) + usdtAmount).toString();
+      
+      console.log(`Simulated swap: ${ethAmount} ETH to ${usdtAmount} USDT for wallet ${fromWallet.address}`);
       
       // Return the transaction result
       return {

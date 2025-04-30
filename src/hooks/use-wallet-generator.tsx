@@ -1,11 +1,10 @@
 
 import { useState, useEffect } from "react";
 import { WalletGenerator, WalletAccount, NetworkKey } from "@/services/wallet-generator";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { USDT_ABI } from "@/constants/token-abis";
 
 export const useWalletGenerator = () => {
-  const { toast } = useToast();
   const [wallets, setWallets] = useState<WalletAccount[]>([]);
   const [selectedNetwork, setSelectedNetwork] = useState<NetworkKey>("ethereum");
   const [isLoading, setIsLoading] = useState(false);
@@ -13,30 +12,34 @@ export const useWalletGenerator = () => {
 
   // Initialize the wallet generator with the USDT ABI
   useEffect(() => {
-    const generator = new WalletGenerator(selectedNetwork, USDT_ABI);
-    setWalletGenerator(generator);
+    try {
+      console.log("Initializing wallet generator for network:", selectedNetwork);
+      const generator = new WalletGenerator(selectedNetwork, USDT_ABI);
+      setWalletGenerator(generator);
+    } catch (error) {
+      console.error("Error initializing wallet generator:", error);
+      toast.error("Failed to initialize wallet generator");
+    }
   }, [selectedNetwork]);
 
   // Generate a specified number of wallets
   const generateWallets = async (count: number, initialBalance: string = "10.0") => {
-    if (!walletGenerator) return;
+    if (!walletGenerator) {
+      console.error("Wallet generator not initialized");
+      toast.error("Wallet generator not initialized");
+      return;
+    }
     
     setIsLoading(true);
     try {
+      console.log(`Generating ${count} wallets with ${initialBalance} ETH each...`);
       const newWallets = await walletGenerator.generateWallets(count, initialBalance);
+      console.log("Generated wallets:", newWallets);
       setWallets(newWallets);
-      
-      toast({
-        title: "Wallets Created",
-        description: `Successfully generated ${count} test wallets with ${initialBalance} ETH each`,
-      });
+      return newWallets;
     } catch (error) {
       console.error("Error generating wallets:", error);
-      toast({
-        title: "Error",
-        description: "Failed to generate wallets",
-        variant: "destructive",
-      });
+      throw error;
     } finally {
       setIsLoading(false);
     }
@@ -52,11 +55,7 @@ export const useWalletGenerator = () => {
       
       // Check if wallet has enough balance
       if (parseFloat(wallet.balance) < parseFloat(ethAmount)) {
-        toast({
-          title: "Insufficient Balance",
-          description: "Not enough ETH for the swap",
-          variant: "destructive",
-        });
+        toast.error("Not enough ETH for the swap");
         setIsLoading(false);
         return;
       }
@@ -74,19 +73,10 @@ export const useWalletGenerator = () => {
       
       setWallets(updatedWallets);
       
-      toast({
-        title: "Swap Completed",
-        description: `Converted ${ethAmount} ETH to USDT. Transaction: ${result.txHash.substring(0, 10)}...`,
-      });
-      
       return result.txHash;
     } catch (error) {
       console.error("Error during ETH to USDT swap:", error);
-      toast({
-        title: "Swap Failed",
-        description: "Failed to convert ETH to USDT",
-        variant: "destructive",
-      });
+      toast.error("Failed to convert ETH to USDT");
       return null;
     } finally {
       setIsLoading(false);

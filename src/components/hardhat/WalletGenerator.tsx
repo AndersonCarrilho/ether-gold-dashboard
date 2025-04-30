@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Wallet, RefreshCw } from "lucide-react";
+import { toast } from "sonner";
 
 const WalletGenerator = () => {
   const { generateWallets, isLoading } = useWalletGenerator();
@@ -14,10 +15,28 @@ const WalletGenerator = () => {
 
   const handleGenerate = async () => {
     if (!walletCount || isNaN(parseInt(walletCount)) || parseInt(walletCount) <= 0) {
+      toast.error("Please enter a valid number of wallets");
       return;
     }
 
-    await generateWallets(parseInt(walletCount), initialBalance);
+    if (!initialBalance || isNaN(parseFloat(initialBalance)) || parseFloat(initialBalance) <= 0) {
+      toast.error("Please enter a valid initial balance");
+      return;
+    }
+
+    try {
+      // Show a toast to indicate we're generating wallets
+      toast.loading(`Generating ${walletCount} wallets...`);
+
+      // Generate the wallets
+      await generateWallets(parseInt(walletCount), initialBalance);
+      
+      // Show success toast
+      toast.success(`Successfully generated ${walletCount} wallets with ${initialBalance} ETH each`);
+    } catch (error) {
+      console.error("Error generating wallets:", error);
+      toast.error("Failed to generate wallets");
+    }
   };
 
   return (
