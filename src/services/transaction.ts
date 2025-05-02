@@ -1,3 +1,4 @@
+
 import { EthereumProvider, Transaction, TransactionReceipt } from "@/types/ethereum";
 import { EtherscanService, ProxyBroadcastParams } from "@/services/etherscan";
 import { ethers } from "ethers";
@@ -86,7 +87,8 @@ export class TransactionService {
           type: 2 // EIP-1559
         });
         
-        return receipt.transactionHash;
+        // Fix: Get transactionHash from the receipt or receipt.receipt
+        return receipt.receipt?.transactionHash || receipt.receipt?.hash || '';
       } catch (error) {
         console.error("Error sending ETH transaction via Etherscan:", error);
         throw error;
