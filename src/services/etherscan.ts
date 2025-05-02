@@ -19,6 +19,18 @@ export interface ProxyBroadcastParams {
   gasLimit?: number;
   chainId?: number;
   type?: number; // 2 = EIP-1559
+  onProgress?: (stage: string, data?: any) => void; // Progress callback
+}
+
+// Transaction receipt enhanced with status descriptions
+export interface EnhancedReceipt {
+  receipt: any;
+  status: 'success' | 'failed' | 'pending';
+  statusDescription: string;
+  gasUsed: string;
+  blockNumber: number;
+  confirmations: number;
+  timestamp?: number;
 }
 
 export class EtherscanService {
@@ -32,108 +44,318 @@ export class EtherscanService {
 
   // Get nonce for an address
   async getNonce(address: string): Promise<number> {
-    const resp = await axios.get(this.baseUrl, {
-      params: {
-        module: 'proxy',
-        action: 'eth_getTransactionCount',
-        address,
-        tag: 'latest',
-        apikey: this.apiKey
+    try {
+      const resp = await axios.get(this.baseUrl, {
+        params: {
+          module: 'proxy',
+          action: 'eth_getTransactionCount',
+          address,
+          tag: 'latest',
+          apikey: this.apiKey
+        }
+      });
+      
+      if (resp.data.error) {
+        throw new Error(resp.data.error.message || 'Failed to get nonce');
       }
-    });
-    return ethers.BigNumber.from(resp.data.result).toNumber();
-  }
-
-  // Get current gas price
-  async getGasPrice(): Promise<ethers.BigNumber> {
-    const resp = await axios.get(this.baseUrl, {
-      params: {
-        module: 'proxy',
-        action: 'eth_gasPrice',
-        apikey: this.apiKey
-      }
-    });
-    return ethers.BigNumber.from(resp.data.result);
-  }
-
-  // Send raw transaction
-  async sendRawTx(signedTx: string): Promise<string> {
-    const resp = await axios.get(this.baseUrl, {
-      params: {
-        module: 'proxy',
-        action: 'eth_sendRawTransaction',
-        hex: signedTx,
-        apikey: this.apiKey
-      }
-    });
-    if (resp.data.error) {
-      throw new Error(resp.data.error.message || 'Error sending transaction');
+      
+      return ethers.BigNumber.from(resp.data.result).toNumber();
+    } catch (error: any) {
+      console.error('Error getting nonce:', error.message);
+      throw new Error(`Failed to get nonce: ${error.message}`);
     }
-    return resp.data.result; // txHash
   }
 
-  // Get transaction receipt
-  async getReceipt(txHash: string): Promise<any> {
-    const resp = await axios.get(this.baseUrl, {
-      params: {
-        module: 'proxy',
-        action: 'eth_getTransactionReceipt',
-        txhash: txHash,
-        apikey: this.apiKey
+  // Get current gas price with fallback
+  async getGasPrice(): Promise<ethers.BigNumber> {
+    try {
+      const resp = await axios.get(this.baseUrl, {
+        params: {
+          module: 'proxy',
+          action: 'eth_gasPrice',
+          apikey: this.apiKey
+        }
+      });
+      
+      if (resp.data.error) {
+        throw new Error(resp.data.error.message || 'Failed to get gas price');
       }
-    });
-    return resp.data.result;
+      
+      return ethers.BigNumber.from(resp.data.result);
+    } catch (error: any) {
+      console.error('Error getting gas price:', error.message);
+      // Fallback gas price if the API fails
+      return ethers.utils.parseUnits('50', 'gwei');
+    }
   }
 
-  // Broadcast transaction via Etherscan proxy
+  // Send raw transaction with better error handling
+  async sendRawTx(signedTx: string): Promise<string> {
+    try {
+      const resp = await axios.get(this.baseUrl, {
+        params: {
+          module: 'proxy',
+          action: 'eth_sendRawTransaction',
+          hex: signedTx,
+          apikey: this.apiKey
+        }
+      });
+      
+      if (resp.data.error) {
+        const errorMsg = resp.data.error.message || 'Error sending transaction';
+        // Better error messages for common issues
+        if (errorMsg.includes('nonce')) {
+          throw new Error('Transaction nonce error: Try refreshing your account data');
+        }
+        if (errorMsg.includes('underpriced')) {
+          throw new Error('Gas price too low: Try increasing the gas price');
+        }
+        if (errorMsg.includes('insufficient funds')) {
+          throw new Error('Insufficient funds for gas * price + value');
+        }
+        throw new Error(errorMsg);
+      }
+      
+      return resp.data.result; // txHash
+    } catch (error: any) {
+      console.error('Error sending transaction:', error);
+      if (error.response) {
+        throw new Error(`API Error: ${error.response.data?.message || error.message}`);
+      }
+      throw error;
+    }
+  }
+
+  // Get transaction receipt with retries
+  async getReceipt(txHash: string, maxRetries = 5): Promise<any> {
+    let retries = 0;
+    
+    while (retries < maxRetries) {
+      try {
+        const resp = await axios.get(this.baseUrl, {
+          params: {
+            module: 'proxy',
+            action: 'eth_getTransactionReceipt',
+            txhash: txHash,
+            apikey: this.apiKey
+          }
+        });
+        
+        if (resp.data.result) {
+          return resp.data.result;
+        }
+        
+        // If no result yet, wait before retrying
+        retries++;
+        if (retries < maxRetries) {
+          await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds
+        }
+      } catch (error) {
+        retries++;
+        if (retries === maxRetries) {
+          throw error;
+        }
+        await new Promise(resolve => setTimeout(resolve, 2000));
+      }
+    }
+    
+    throw new Error('Failed to get transaction receipt after multiple attempts');
+  }
+
+  // Get detailed transaction info
+  async getTransactionInfo(txHash: string): Promise<any> {
+    try {
+      const resp = await axios.get(this.baseUrl, {
+        params: {
+          module: 'proxy',
+          action: 'eth_getTransactionByHash',
+          txhash: txHash,
+          apikey: this.apiKey
+        }
+      });
+      
+      if (resp.data.error) {
+        throw new Error(resp.data.error.message || 'Error getting transaction');
+      }
+      
+      return resp.data.result;
+    } catch (error: any) {
+      console.error('Error getting transaction:', error);
+      throw new Error(`Failed to get transaction: ${error.message}`);
+    }
+  }
+
+  // Get block information
+  async getBlockInfo(blockNumber: string): Promise<any> {
+    try {
+      const resp = await axios.get(this.baseUrl, {
+        params: {
+          module: 'proxy',
+          action: 'eth_getBlockByNumber',
+          tag: blockNumber,
+          boolean: true, // include transaction details
+          apikey: this.apiKey
+        }
+      });
+      
+      if (resp.data.error) {
+        throw new Error(resp.data.error.message || 'Error getting block');
+      }
+      
+      return resp.data.result;
+    } catch (error: any) {
+      console.error('Error getting block:', error);
+      throw new Error(`Failed to get block: ${error.message}`);
+    }
+  }
+
+  // Enhanced transaction receipt with more information
+  async getEnhancedReceipt(txHash: string): Promise<EnhancedReceipt> {
+    try {
+      const receipt = await this.getReceipt(txHash);
+      
+      if (!receipt) {
+        return {
+          receipt: null,
+          status: 'pending',
+          statusDescription: 'Transaction is pending',
+          gasUsed: '0',
+          blockNumber: 0,
+          confirmations: 0
+        };
+      }
+      
+      // Get current block number for confirmations
+      const currentBlockResp = await axios.get(this.baseUrl, {
+        params: {
+          module: 'proxy',
+          action: 'eth_blockNumber',
+          apikey: this.apiKey
+        }
+      });
+      
+      const currentBlock = parseInt(currentBlockResp.data.result, 16);
+      const txBlockNumber = parseInt(receipt.blockNumber, 16);
+      const confirmations = currentBlock - txBlockNumber;
+      
+      // Get block info for timestamp
+      const blockInfo = await this.getBlockInfo(receipt.blockNumber);
+      
+      return {
+        receipt,
+        status: receipt.status === '0x1' ? 'success' : 'failed',
+        statusDescription: receipt.status === '0x1' ? 'Transaction succeeded' : 'Transaction failed',
+        gasUsed: ethers.BigNumber.from(receipt.gasUsed).toString(),
+        blockNumber: txBlockNumber,
+        confirmations,
+        timestamp: blockInfo ? parseInt(blockInfo.timestamp, 16) : undefined
+      };
+    } catch (error: any) {
+      console.error('Error getting enhanced receipt:', error);
+      throw new Error(`Failed to get transaction details: ${error.message}`);
+    }
+  }
+
+  // Broadcast transaction via Etherscan proxy with progress tracking
   async broadcastTransaction({
     privateKey,
     to,
     valueEther,
     gasLimit = 21000,
     chainId = 1,
-    type = 2 // EIP-1559 by default
-  }: ProxyBroadcastParams): Promise<any> {
+    type = 2, // EIP-1559 by default
+    onProgress
+  }: ProxyBroadcastParams): Promise<EnhancedReceipt> {
     const wallet = new ethers.Wallet(privateKey);
     const address = wallet.address;
 
-    // 1. Get nonce
-    const nonce = await this.getNonce(address);
-
-    // 2. Prepare transaction parameters
-    let txParams: any = { 
-      to, 
-      value: ethers.utils.parseEther(valueEther), 
-      nonce, 
-      chainId, 
-      gasLimit 
-    };
-
-    if (type === 2) {
-      const gasPrice = await this.getGasPrice();
-      // Use gasPrice as maxFeePerGas and fixed maxPriorityFeePerGas
-      txParams = {
-        ...txParams,
-        type: 2,
-        maxFeePerGas: gasPrice.mul(2),
-        maxPriorityFeePerGas: ethers.utils.parseUnits('2', 'gwei')
+    try {
+      // 1. Get nonce
+      onProgress?.('nonce', { address });
+      const nonce = await this.getNonce(address);
+      
+      // 2. Prepare transaction parameters
+      onProgress?.('params', { type });
+      let txParams: any = { 
+        to, 
+        value: ethers.utils.parseEther(valueEther), 
+        nonce, 
+        chainId, 
+        gasLimit 
       };
-    } else {
-      const gasPrice = await this.getGasPrice();
-      txParams = { ...txParams, gasPrice };
+
+      if (type === 2) {
+        const gasPrice = await this.getGasPrice();
+        onProgress?.('gasFees', { 
+          gasPrice: ethers.utils.formatUnits(gasPrice, 'gwei'),
+          maxFeePerGas: ethers.utils.formatUnits(gasPrice.mul(2), 'gwei'),
+          maxPriorityFee: '2'
+        });
+        
+        // Use gasPrice as maxFeePerGas and fixed maxPriorityFeePerGas
+        txParams = {
+          ...txParams,
+          type: 2,
+          maxFeePerGas: gasPrice.mul(2),
+          maxPriorityFeePerGas: ethers.utils.parseUnits('2', 'gwei')
+        };
+      } else {
+        const gasPrice = await this.getGasPrice();
+        onProgress?.('gasFees', { gasPrice: ethers.utils.formatUnits(gasPrice, 'gwei') });
+        txParams = { ...txParams, gasPrice };
+      }
+
+      // 3. Sign the transaction
+      onProgress?.('signing');
+      const signedTx = await wallet.signTransaction(txParams);
+      console.log('Raw TX:', signedTx);
+
+      // 4. Broadcast via Etherscan Proxy
+      onProgress?.('broadcasting');
+      const txHash = await this.sendRawTx(signedTx);
+      console.log('Transaction sent, hash:', txHash);
+      onProgress?.('broadcasted', { txHash });
+
+      // 5. Wait for receipt
+      onProgress?.('waiting');
+      let attempts = 1;
+      let receipt = null;
+      
+      while (!receipt && attempts <= 5) {
+        try {
+          // Wait a bit longer each attempt
+          await new Promise(resolve => setTimeout(resolve, attempts * 2000));
+          onProgress?.('checking', { attempt: attempts });
+          receipt = await this.getReceipt(txHash);
+        } catch (error) {
+          console.log(`Attempt ${attempts} failed, retrying...`);
+        }
+        attempts++;
+      }
+      
+      if (!receipt) {
+        onProgress?.('pending', { txHash });
+        // Return pending status but with the transaction hash
+        return {
+          receipt: { transactionHash: txHash },
+          status: 'pending',
+          statusDescription: 'Transaction was sent but receipt is not available yet',
+          gasUsed: '0',
+          blockNumber: 0,
+          confirmations: 0
+        };
+      }
+      
+      // 6. Get enhanced receipt with additional information
+      onProgress?.('finalizing');
+      const enhancedReceipt = await this.getEnhancedReceipt(txHash);
+      onProgress?.('complete', enhancedReceipt);
+      
+      return enhancedReceipt;
+    } catch (error: any) {
+      console.error('Error in transaction broadcast:', error);
+      onProgress?.('error', { message: error.message });
+      throw error;
     }
-
-    // 3. Sign the transaction
-    const signedTx = await wallet.signTransaction(txParams);
-    console.log('Raw TX:', signedTx);
-
-    // 4. Broadcast via Etherscan Proxy
-    const txHash = await this.sendRawTx(signedTx);
-    console.log('Transaction sent, hash:', txHash);
-
-    // 5. Wait for receipt and return it
-    const receipt = await this.getReceipt(txHash);
-    console.log('Receipt:', receipt);
-    return receipt;
   }
 }

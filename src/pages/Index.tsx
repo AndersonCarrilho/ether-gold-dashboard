@@ -5,12 +5,17 @@ import AssetCard from "@/components/dashboard/AssetCard";
 import TransactionRow from "@/components/dashboard/TransactionRow";
 import TransactionReceipt from "@/components/dashboard/TransactionReceipt";
 import PendingTransactions from "@/components/dashboard/PendingTransactions";
+import SystemInfoCard from "@/components/dashboard/SystemInfoCard";
+import NetworkStatsCard from "@/components/dashboard/NetworkStatsCard";
+import QuickActionsCard from "@/components/dashboard/QuickActionsCard";
+import GasCard from "@/components/dashboard/GasCard";
+import BackgroundAnimation from "@/components/ui/background-animation";
 import { useEthereum, ETH_TOKENS } from "@/hooks/use-ethereum";
 import { TransactionService } from "@/services/transaction";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
-import { Activity } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Activity, Info } from "lucide-react";
 
 // Mock chart data
 const chartData = [
@@ -116,133 +121,130 @@ const Index = () => {
   
   return (
     <DashboardLayout>
-      <div className="flex flex-col gap-4">
-        {!connected ? (
-          <div className="flex flex-col items-center justify-center p-8">
-            <h2 className="text-2xl font-bold mb-2 gold-gradient">Welcome to EtherGold Dashboard</h2>
-            <p className="text-muted-foreground mb-4 text-center">
-              Connect your wallet to view your assets and transaction history.
-            </p>
-          </div>
-        ) : (
-          <>
-            <h1 className="text-2xl font-bold gold-gradient">Dashboard</h1>
-            
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <AssetCard
-                assetName="Ethereum"
-                balance={`${tokenBalances.ETH} ETH`}
-                value="$3,245.67"
-                change="+2.4%"
-                color="#627EEA"
-              />
-              <AssetCard
-                assetName="Tether USD"
-                balance={`${tokenBalances.USDT} USDT`}
-                value="$1,000.00"
-                change="0%"
-                color="#50AF95"
-              />
-              <AssetCard
-                assetName="USD Coin"
-                balance={`${tokenBalances.USDC} USDC`}
-                value="$500.00"
-                change="0%"
-                color="#2775CA"
-              />
+      <BackgroundAnimation>
+        <div className="flex flex-col gap-4">
+          {!connected ? (
+            <div className="flex flex-col items-center justify-center p-8">
+              <div className="relative mb-6 w-24 h-24">
+                <div className="absolute inset-0 rounded-full bg-gold/20 animate-ping"></div>
+                <div className="absolute inset-2 rounded-full bg-gold/30 animate-pulse"></div>
+                <div className="absolute inset-4 rounded-full bg-gold/50"></div>
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <Info className="h-8 w-8 text-gold" />
+                </div>
+              </div>
+              <h2 className="text-3xl font-bold mb-4 gold-gradient">Welcome to EtherGold Dashboard</h2>
+              <p className="text-muted-foreground mb-6 text-center max-w-md">
+                Connect your wallet to access advanced blockchain analytics, transaction monitoring, 
+                and financial management tools powered by Ethereum.
+              </p>
+              <div className="p-4 border border-gold/30 rounded-lg bg-secondary/30 text-sm text-muted-foreground max-w-md">
+                <p className="mb-2">🔐 Your private keys never leave your device</p>
+                <p className="mb-2">📊 Real-time transaction monitoring</p>
+                <p>💰 Advanced portfolio management tools</p>
+              </div>
             </div>
-            
-            {/* Add the new Pending Transactions component */}
-            <div className="mt-4">
-              <PendingTransactions />
-            </div>
-            
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-4">
-              <Card className="card-hover lg:col-span-2">
-                <CardHeader>
-                  <CardTitle className="text-sm font-medium">Portfolio Value</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="h-[200px]">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <AreaChart data={chartData}>
-                        <defs>
-                          <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="#D4AF37" stopOpacity={0.8} />
-                            <stop offset="95%" stopColor="#D4AF37" stopOpacity={0} />
-                          </linearGradient>
-                        </defs>
-                        <XAxis 
-                          dataKey="name" 
-                          tick={{ fill: '#888', fontSize: 12 }}
-                          axisLine={{ stroke: '#333' }}
-                        />
-                        <YAxis 
-                          tick={{ fill: '#888', fontSize: 12 }}
-                          axisLine={{ stroke: '#333' }}
-                        />
-                        <Tooltip 
-                          contentStyle={{ 
-                            backgroundColor: '#222', 
-                            borderColor: '#444',
-                            color: '#fff'
-                          }} 
-                        />
-                        <Area
-                          type="monotone"
-                          dataKey="value"
-                          stroke="#D4AF37"
-                          fillOpacity={1}
-                          fill="url(#colorValue)"
-                        />
-                      </AreaChart>
-                    </ResponsiveContainer>
-                  </div>
-                </CardContent>
-              </Card>
+          ) : (
+            <>
+              <div className="flex items-center justify-between">
+                <h1 className="text-2xl font-bold gold-gradient">Dashboard</h1>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button variant="outline" size="sm" className="flex gap-1 text-xs border-gold/30">
+                        <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+                        Network: Mainnet
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Currently connected to Ethereum Mainnet</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
               
-              <Card className="card-hover">
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-sm font-medium">Recent Transactions</CardTitle>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-8 text-xs text-gold hover:text-gold-light"
-                    onClick={() => window.location.href = "/transactions"}
-                  >
-                    View All
-                    <Activity className="ml-1 h-4 w-4" />
-                  </Button>
-                </CardHeader>
-                <CardContent className="p-0">
-                  <div className="max-h-[220px] overflow-y-auto scrollbar-thin">
-                    {mockTransactions.map((tx) => (
-                      <TransactionRow
-                        key={tx.hash}
-                        {...tx}
-                        onViewReceipt={() => handleViewReceipt(tx)}
-                      />
-                    ))}
-                    {mockTransactions.length === 0 && (
-                      <div className="p-4 text-center text-muted-foreground">
-                        No recent transactions
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <AssetCard
+                  assetName="Ethereum"
+                  balance={`${tokenBalances.ETH} ETH`}
+                  value="$3,245.67"
+                  change="+2.4%"
+                  color="#627EEA"
+                />
+                <AssetCard
+                  assetName="Tether USD"
+                  balance={`${tokenBalances.USDT} USDT`}
+                  value="$1,000.00"
+                  change="0%"
+                  color="#50AF95"
+                />
+                <AssetCard
+                  assetName="USD Coin"
+                  balance={`${tokenBalances.USDC} USDC`}
+                  value="$500.00"
+                  change="0%"
+                  color="#2775CA"
+                />
+              </div>
+
+              {/* Quick Actions */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+                <QuickActionsCard />
+                <GasCard />
+                <SystemInfoCard />
+              </div>
+              
+              {/* Pending Transactions */}
+              <div className="mt-4">
+                <PendingTransactions />
+              </div>
+              
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-4">
+                <NetworkStatsCard />
+                
+                <Card className="card-hover lg:col-span-2">
+                  <CardHeader className="flex flex-row items-center justify-between pb-2">
+                    <CardTitle className="text-sm font-medium">Recent Transactions</CardTitle>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 text-xs text-gold hover:text-gold-light"
+                      onClick={() => window.location.href = "/transactions"}
+                    >
+                      View All
+                      <Activity className="ml-1 h-4 w-4" />
+                    </Button>
+                  </CardHeader>
+                  <CardContent className="p-0">
+                    <div className="max-h-[220px] overflow-y-auto scrollbar-thin">
+                      {mockTransactions.map((tx) => (
+                        <TransactionRow
+                          key={tx.hash}
+                          {...tx}
+                          onViewReceipt={() => handleViewReceipt(tx)}
+                        />
+                      ))}
+                      {mockTransactions.length === 0 && (
+                        <div className="p-4 text-center text-muted-foreground">
+                          No recent transactions
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </>
+          )}
+        </div>
+        
+        {selectedReceipt && (
+          <TransactionReceipt
+            open={showReceipt}
+            onOpenChange={setShowReceipt}
+            transactionData={selectedReceipt}
+          />
         )}
-      </div>
-      
-      {selectedReceipt && (
-        <TransactionReceipt
-          open={showReceipt}
-          onOpenChange={setShowReceipt}
-          transactionData={selectedReceipt}
-        />
-      )}
+      </BackgroundAnimation>
     </DashboardLayout>
   );
 };
