@@ -1,13 +1,26 @@
 import { EthereumProvider, Transaction, TransactionReceipt } from "@/types/ethereum";
+import { EtherscanService, ProxyBroadcastParams } from "@/services/etherscan";
+import { ethers } from "ethers";
 
 // ABI for ERC20 token transfer
 const ERC20_TRANSFER_ABI = "0xa9059cbb"; // function transfer(address to, uint256 amount)
 
 export class TransactionService {
   private provider: EthereumProvider;
+  private etherscanService: EtherscanService | null = null;
 
-  constructor(provider: EthereumProvider) {
+  constructor(provider: EthereumProvider, etherscanApiKey?: string) {
     this.provider = provider;
+    
+    // Initialize Etherscan service if API key is provided
+    if (etherscanApiKey) {
+      this.etherscanService = new EtherscanService({ apiKey: etherscanApiKey });
+    }
+  }
+
+  // Set Etherscan API key after initialization
+  setEtherscanApiKey(apiKey: string): void {
+    this.etherscanService = new EtherscanService({ apiKey });
   }
 
   // Estimate gas for a transaction
@@ -58,7 +71,29 @@ export class TransactionService {
   }
 
   // Send ETH transaction
-  async sendEthTransaction(from: string, to: string, value: string): Promise<string> {
+  async sendEthTransaction(from: string, to: string, value: string, useEtherscan: boolean = false, privateKey?: string): Promise<string> {
+    // Use Etherscan proxy if requested and available
+    if (useEtherscan && this.etherscanService && privateKey) {
+      try {
+        // Convert valueEther to proper format
+        const valueEther = value;
+        
+        const receipt = await this.etherscanService.broadcastTransaction({
+          privateKey,
+          to,
+          valueEther,
+          gasLimit: 21000,
+          type: 2 // EIP-1559
+        });
+        
+        return receipt.transactionHash;
+      } catch (error) {
+        console.error("Error sending ETH transaction via Etherscan:", error);
+        throw error;
+      }
+    }
+    
+    // Otherwise use regular provider
     try {
       // Convert value to wei (hex)
       const valueInWei = "0x" + BigInt(Math.floor(parseFloat(value) * 1e18)).toString(16);
@@ -96,19 +131,65 @@ export class TransactionService {
     to: string, 
     tokenAddress: string, 
     value: string, 
-    decimals: number
+    decimals: number,
+    useEtherscan: boolean = false,
+    privateKey?: string
   ): Promise<string> {
+    // Format data for ERC20 transfer
+    // Function signature + parameters
+    const toAddressPadded = to.slice(2).padStart(64, "0");
+    const factor = BigInt(10) ** BigInt(decimals);
+    const valueHex = "0x" + (BigInt(Math.floor(parseFloat(value) * Number(factor)))).toString(16);
+    const valuePadded = valueHex.slice(2).padStart(64, "0");
+    const data = `${ERC20_TRANSFER_ABI}${toAddressPadded}${valuePadded}`;
+    
+    // Use Etherscan proxy if requested and available
+    if (useEtherscan && this.etherscanService && privateKey) {
+      try {
+        // For tokens, we need to create a custom contract transaction
+        const wallet = new ethers.Wallet(privateKey);
+        const nonce = await this.etherscanService.getNonce(wallet.address);
+        const gasPrice = await this.etherscanService.getGasPrice();
+        
+        // Estimate gas through provider if possible
+        let gasLimit = 150000; // Default gas limit for token transfers
+        try {
+          const gasEstimate = await this.estimateGas({
+            from,
+            to: tokenAddress,
+            data,
+            value: "0x0",
+          });
+          gasLimit = parseInt(gasEstimate, 16);
+        } catch (error) {
+          console.warn("Could not estimate gas, using default:", error);
+        }
+        
+        // Create transaction parameters
+        const txParams = {
+          to: tokenAddress,
+          data,
+          nonce,
+          chainId: 1,
+          gasLimit,
+          type: 2,
+          maxFeePerGas: gasPrice.mul(2),
+          maxPriorityFeePerGas: ethers.utils.parseUnits('2', 'gwei'),
+          value: ethers.constants.Zero
+        };
+        
+        // Sign and send
+        const signedTx = await wallet.signTransaction(txParams);
+        const txHash = await this.etherscanService.sendRawTx(signedTx);
+        return txHash;
+      } catch (error) {
+        console.error("Error sending token transaction via Etherscan:", error);
+        throw error;
+      }
+    }
+    
+    // Otherwise use regular provider
     try {
-      // Convert value to proper decimal format (hex)
-      const factor = BigInt(10) ** BigInt(decimals);
-      const valueHex = "0x" + (BigInt(Math.floor(parseFloat(value) * Number(factor)))).toString(16);
-      
-      // Format data for ERC20 transfer
-      // Function signature + parameters
-      const toAddressPadded = to.slice(2).padStart(64, "0");
-      const valuePadded = valueHex.slice(2).padStart(64, "0");
-      const data = `${ERC20_TRANSFER_ABI}${toAddressPadded}${valuePadded}`;
-      
       const gasPrice = await this.getGasPrice();
       const gasEstimate = await this.estimateGas({
         from,
@@ -154,6 +235,18 @@ export class TransactionService {
 
   // Wait for transaction confirmation
   async waitForTransaction(txHash: string, confirmations = 1): Promise<TransactionReceipt | null> {
+    // If Etherscan service is available, try to use it first
+    if (this.etherscanService) {
+      try {
+        const receipt = await this.etherscanService.getReceipt(txHash);
+        if (receipt) {
+          return receipt;
+        }
+      } catch (error) {
+        console.warn("Failed to get receipt from Etherscan, falling back to provider", error);
+      }
+    }
+    
     return new Promise<TransactionReceipt | null>((resolve, reject) => {
       const checkReceipt = async () => {
         try {

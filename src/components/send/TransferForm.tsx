@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useEthereum, ETH_TOKENS } from "@/hooks/use-ethereum";
 import { TransactionService } from "@/services/transaction";
@@ -5,6 +6,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -13,8 +15,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Send, Info } from "lucide-react";
+import { Send, Info, Key, ExternalLink } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { 
+  Accordion, 
+  AccordionContent, 
+  AccordionItem, 
+  AccordionTrigger 
+} from "@/components/ui/accordion";
 
 interface TransferFormProps {
   onTransactionComplete: (txHash: string) => void;
@@ -31,6 +39,12 @@ const TransferForm: React.FC<TransferFormProps> = ({ onTransactionComplete }) =>
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [estimatedGas, setEstimatedGas] = useState<string | null>(null);
   
+  // New state for Etherscan API integration
+  const [useEtherscan, setUseEtherscan] = useState(false);
+  const [etherscanApiKey, setEtherscanApiKey] = useState("");
+  const [privateKey, setPrivateKey] = useState("");
+  const [showAdvancedOptions, setShowAdvancedOptions] = useState(false);
+  
   // Form validation
   const isValidEthAddress = (address: string) => {
     return address.match(/^0x[a-fA-F0-9]{40}$/);
@@ -41,7 +55,11 @@ const TransferForm: React.FC<TransferFormProps> = ({ onTransactionComplete }) =>
   };
   
   const isFormValid = () => {
-    return isValidEthAddress(recipient) && isValidAmount(amount);
+    const basicValidation = isValidEthAddress(recipient) && isValidAmount(amount);
+    if (!useEtherscan) return basicValidation;
+    
+    // When using Etherscan, we also need API key and private key
+    return basicValidation && etherscanApiKey.trim() !== "" && privateKey.trim() !== "";
   };
   
   const handleTokenChange = (value: string) => {
@@ -65,7 +83,7 @@ const TransferForm: React.FC<TransferFormProps> = ({ onTransactionComplete }) =>
     
     try {
       setIsLoading(true);
-      const txService = new TransactionService(walletState.provider);
+      const txService = new TransactionService(walletState.provider, useEtherscan ? etherscanApiKey : undefined);
       const gasPrice = await txService.getGasPrice();
       
       let gasEstimate;
@@ -121,13 +139,21 @@ const TransferForm: React.FC<TransferFormProps> = ({ onTransactionComplete }) =>
     try {
       setIsLoading(true);
       const txService = new TransactionService(walletState.provider);
+      
+      // If using Etherscan, set the API key
+      if (useEtherscan && etherscanApiKey) {
+        txService.setEtherscanApiKey(etherscanApiKey);
+      }
+      
       let txHash;
       
       if (selectedToken === "ETH") {
         txHash = await txService.sendEthTransaction(
           walletState.accounts[0],
           recipient,
-          amount
+          amount,
+          useEtherscan,
+          useEtherscan ? privateKey : undefined
         );
       } else {
         const token = ETH_TOKENS[selectedToken as keyof typeof ETH_TOKENS];
@@ -136,7 +162,9 @@ const TransferForm: React.FC<TransferFormProps> = ({ onTransactionComplete }) =>
           recipient,
           token.address,
           amount,
-          token.decimals
+          token.decimals,
+          useEtherscan,
+          useEtherscan ? privateKey : undefined
         );
       }
       
@@ -256,6 +284,77 @@ const TransferForm: React.FC<TransferFormProps> = ({ onTransactionComplete }) =>
               <p className="text-red-500 text-xs mt-1">Invalid amount</p>
             )}
           </div>
+          
+          <Accordion
+            type="single" 
+            collapsible
+            value={showAdvancedOptions ? "advanced" : ""}
+            onValueChange={(value) => setShowAdvancedOptions(value === "advanced")}
+          >
+            <AccordionItem value="advanced" className="border-b-0">
+              <AccordionTrigger className="py-2 text-sm">
+                Advanced Options
+              </AccordionTrigger>
+              <AccordionContent className="space-y-3">
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="useEtherscan"
+                    checked={useEtherscan}
+                    onCheckedChange={(checked) => setUseEtherscan(!!checked)}
+                  />
+                  <Label htmlFor="useEtherscan" className="text-sm cursor-pointer">
+                    Use Etherscan API (for offline signing)
+                  </Label>
+                </div>
+                
+                {useEtherscan && (
+                  <>
+                    <div className="space-y-2">
+                      <Label htmlFor="etherscanApiKey" className="flex items-center">
+                        <Key className="h-3 w-3 mr-1" />
+                        Etherscan API Key
+                      </Label>
+                      <Input
+                        id="etherscanApiKey"
+                        type="password"
+                        placeholder="Your Etherscan API key"
+                        value={etherscanApiKey}
+                        onChange={(e) => setEtherscanApiKey(e.target.value)}
+                      />
+                      <div className="text-xs flex items-center">
+                        <a 
+                          href="https://etherscan.io/apis" 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="text-gold hover:text-gold-dark flex items-center"
+                        >
+                          Get an API key <ExternalLink className="h-3 w-3 ml-1" />
+                        </a>
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="privateKey" className="flex items-center">
+                        <Key className="h-3 w-3 mr-1" />
+                        Private Key
+                      </Label>
+                      <Input
+                        id="privateKey"
+                        type="password"
+                        placeholder="Your wallet's private key"
+                        value={privateKey}
+                        onChange={(e) => setPrivateKey(e.target.value)}
+                      />
+                      <p className="text-amber-500 text-xs flex items-center">
+                        <Info className="h-3 w-3 mr-1" />
+                        Never share your private key! For testing only.
+                      </p>
+                    </div>
+                  </>
+                )}
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
         </CardContent>
         <CardFooter>
           <Button
@@ -290,6 +389,13 @@ const TransferForm: React.FC<TransferFormProps> = ({ onTransactionComplete }) =>
 
               <div className="text-sm text-muted-foreground">Estimated Gas Fee:</div>
               <div className="text-sm font-medium">{estimatedGas} ETH</div>
+              
+              {useEtherscan && (
+                <>
+                  <div className="text-sm text-muted-foreground">Broadcast Method:</div>
+                  <div className="text-sm font-medium">Etherscan API</div>
+                </>
+              )}
             </div>
 
             <div className="flex items-center p-3 bg-gold/10 rounded-md">
