@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import AssetCard from "@/components/dashboard/AssetCard";
@@ -9,6 +8,9 @@ import SystemInfoCard from "@/components/dashboard/SystemInfoCard";
 import NetworkStatsCard from "@/components/dashboard/NetworkStatsCard";
 import QuickActionsCard from "@/components/dashboard/QuickActionsCard";
 import GasCard from "@/components/dashboard/GasCard";
+import NetworkHealthCard from "@/components/dashboard/NetworkHealthCard";
+import BlockchainExplorerCard from "@/components/dashboard/BlockchainExplorerCard";
+import MarketDataCard from "@/components/dashboard/MarketDataCard";
 import BackgroundAnimation from "@/components/ui/background-animation";
 import { useEthereum, ETH_TOKENS } from "@/hooks/use-ethereum";
 import { TransactionService } from "@/services/transaction";
@@ -187,11 +189,17 @@ const Index = () => {
                 />
               </div>
 
-              {/* Quick Actions */}
+              {/* Quick Actions and System Info */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
                 <QuickActionsCard />
+                <NetworkHealthCard />
                 <GasCard />
-                <SystemInfoCard />
+              </div>
+              
+              {/* Market Data and Blockchain Explorer */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                <MarketDataCard />
+                <BlockchainExplorerCard />
               </div>
               
               {/* Pending Transactions */}
@@ -200,9 +208,10 @@ const Index = () => {
               </div>
               
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-4">
+                <SystemInfoCard />
                 <NetworkStatsCard />
                 
-                <Card className="card-hover lg:col-span-2">
+                <Card className="card-hover lg:col-span-1">
                   <CardHeader className="flex flex-row items-center justify-between pb-2">
                     <CardTitle className="text-sm font-medium">Recent Transactions</CardTitle>
                     <Button
