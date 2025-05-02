@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useEthereum } from "@/hooks/use-ethereum";
 import { Clock, RefreshCw } from "lucide-react";
@@ -212,7 +213,8 @@ const PendingTransactions = () => {
             <TooltipContent>
               <p>{isSubscribed ? "Stop monitoring pending transactions" : "Start monitoring pending transactions"}</p>
             </TooltipContent>
-          </TooltipProvider>
+          </Tooltip>
+        </TooltipProvider>
       </CardHeader>
       <CardContent className="p-0">
         {!connected ? (
