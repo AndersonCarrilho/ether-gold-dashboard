@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { EthereumProvider, WalletState, NetworkConfig } from "@/types/ethereum";
@@ -203,7 +202,7 @@ export const useEthereum = () => {
     }
   };
 
-  // Disconnect wallet - Fixed implementation
+  // Disconnect wallet
   const disconnectWallet = () => {
     try {
       console.log("Disconnecting wallet - state reset initiated");

@@ -4,6 +4,7 @@ import DashboardLayout from "@/components/layout/DashboardLayout";
 import AssetCard from "@/components/dashboard/AssetCard";
 import TransactionRow from "@/components/dashboard/TransactionRow";
 import TransactionReceipt from "@/components/dashboard/TransactionReceipt";
+import PendingTransactions from "@/components/dashboard/PendingTransactions";
 import { useEthereum, ETH_TOKENS } from "@/hooks/use-ethereum";
 import { TransactionService } from "@/services/transaction";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -149,6 +150,11 @@ const Index = () => {
                 change="0%"
                 color="#2775CA"
               />
+            </div>
+            
+            {/* Add the new Pending Transactions component */}
+            <div className="mt-4">
+              <PendingTransactions />
             </div>
             
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-4">
