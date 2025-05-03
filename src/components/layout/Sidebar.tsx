@@ -1,3 +1,4 @@
+
 import {
   Sidebar as ShadcnSidebar,
   SidebarContent,
@@ -22,6 +23,7 @@ import {
   AreaChart,
   Coins,
   HardDrive,
+  FileText,
 } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 
@@ -50,6 +52,11 @@ const sidebarItems = [
     title: "Tokens",
     href: "/tokens",
     icon: Coins,
+  },
+  {
+    title: "FIN MT Messages",
+    href: "/fin-mt",
+    icon: FileText,
   },
   {
     title: "Hardhat Sim",

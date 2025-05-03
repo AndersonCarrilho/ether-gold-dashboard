@@ -3,6 +3,7 @@ import MarketDataCard from "./MarketDataCard";
 import BlockchainExplorerCard from "./BlockchainExplorerCard";
 import NeuralNetworkCard from "./NeuralNetworkCard";
 import FinancialMessagingCard from "./FinancialMessagingCard";
+import BlockchainMessagingCard from "./BlockchainMessagingCard";
 
 const MarketSection = () => {
   return (
@@ -10,6 +11,7 @@ const MarketSection = () => {
       <MarketDataCard />
       <BlockchainExplorerCard />
       <NeuralNetworkCard />
+      <BlockchainMessagingCard />
       <FinancialMessagingCard />
     </div>
   );

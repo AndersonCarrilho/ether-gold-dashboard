@@ -12,6 +12,7 @@ import Tokens from "./pages/Tokens";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 import HardhatSim from "./pages/HardhatSim";
+import FinMT from "./pages/FinMT";
 import { useEffect } from "react";
 
 const queryClient = new QueryClient();
@@ -36,6 +37,7 @@ const App = () => {
             <Route path="/tokens" element={<Tokens />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/hardhat" element={<HardhatSim />} />
+            <Route path="/fin-mt" element={<FinMT />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
