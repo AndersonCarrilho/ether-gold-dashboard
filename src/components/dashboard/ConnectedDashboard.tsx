@@ -26,7 +26,7 @@ const ConnectedDashboard = ({ mockTransactions }: ConnectedDashboardProps) => {
   };
   
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full overflow-y-auto pb-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold gold-gradient">Dashboard</h1>
         <TooltipProvider>
@@ -46,16 +46,17 @@ const ConnectedDashboard = ({ mockTransactions }: ConnectedDashboardProps) => {
       
       <AssetsOverview />
       <DashboardActions />
-      <MarketSection />
-      
-      <div className="mt-4">
-        <PendingTransactions />
-      </div>
       
       <SystemOverview 
         transactions={mockTransactions} 
         onViewReceipt={handleViewReceipt} 
       />
+      
+      <MarketSection />
+      
+      <div className="mt-4">
+        <PendingTransactions />
+      </div>
       
       {selectedReceipt && (
         <TransactionReceipt

@@ -10,15 +10,18 @@ import ComplianceCard from "./ComplianceCard";
 
 const MarketSection = () => {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
-      <MarketDataCard />
-      <BlockchainExplorerCard />
-      <NeuralNetworkCard />
-      <BlockchainMessagingCard />
-      <FinancialMessagingCard />
-      <PaymentSolutionCard />
-      <OperationalStatsCard />
-      <ComplianceCard />
+    <div className="mt-6">
+      <h2 className="text-xl font-semibold mb-3 gold-gradient">Market Solutions</h2>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <MarketDataCard />
+        <BlockchainExplorerCard />
+        <NeuralNetworkCard />
+        <BlockchainMessagingCard />
+        <FinancialMessagingCard />
+        <PaymentSolutionCard />
+        <OperationalStatsCard />
+        <ComplianceCard />
+      </div>
     </div>
   );
 };

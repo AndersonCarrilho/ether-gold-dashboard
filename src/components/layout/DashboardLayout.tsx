@@ -21,7 +21,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
         <Sidebar />
         <div className="flex-1 flex flex-col h-screen">
           <Header />
-          <main className="flex-1 p-4 md:p-6 overflow-hidden">
+          <main className="flex-1 p-4 md:p-6 overflow-y-auto">
             {children}
           </main>
           <footer className="border-t border-border/50 p-4 text-center text-sm text-muted-foreground">
