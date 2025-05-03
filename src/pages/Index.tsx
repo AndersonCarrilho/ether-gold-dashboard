@@ -37,15 +37,17 @@ const Index = () => {
   
   return (
     <DashboardLayout>
-      <BackgroundAnimation>
-        <div className="flex flex-col gap-4">
-          {!connected ? (
-            <WelcomeSection />
-          ) : (
-            <ConnectedDashboard mockTransactions={mockTransactions} />
-          )}
-        </div>
-      </BackgroundAnimation>
+      <div className="h-full w-full relative overflow-hidden">
+        <BackgroundAnimation>
+          <div className="h-full">
+            {!connected ? (
+              <WelcomeSection />
+            ) : (
+              <ConnectedDashboard mockTransactions={mockTransactions} />
+            )}
+          </div>
+        </BackgroundAnimation>
+      </div>
     </DashboardLayout>
   );
 };
