@@ -1,28 +1,45 @@
 
-import { Info } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useEthereum } from "@/hooks/use-ethereum";
 
 const WelcomeSection = () => {
+  const { connectWallet } = useEthereum();
+  
   return (
-    <div className="flex flex-col items-center justify-center p-8">
-      <div className="relative mb-6 w-24 h-24">
-        <div className="absolute inset-0 rounded-full bg-gold/20 animate-ping"></div>
-        <div className="absolute inset-2 rounded-full bg-gold/30 animate-pulse"></div>
-        <div className="absolute inset-4 rounded-full bg-gold/50"></div>
-        <div className="absolute inset-0 flex items-center justify-center">
-          <Info className="h-8 w-8 text-gold" />
+    <section className="mt-8">
+      <div className="flex flex-col items-center text-center space-y-4">
+        <h1 className="text-4xl font-bold gold-gradient">Welcome to NSSC - EUA Dashboard</h1>
+        <p className="text-lg text-muted-foreground max-w-2xl">
+          Connect your wallet to access advanced blockchain analytics, transaction monitoring, and financial management tools powered by Ethereum.
+        </p>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8 w-full max-w-3xl">
+          <div className="bg-card p-4 rounded-lg border border-border flex items-center space-x-3">
+            <div className="h-10 w-10 bg-gold/10 rounded-full flex items-center justify-center">
+              <span className="text-gold text-xl">🔐</span>
+            </div>
+            <p className="text-sm text-card-foreground">Your private keys never leave your device</p>
+          </div>
+          <div className="bg-card p-4 rounded-lg border border-border flex items-center space-x-3">
+            <div className="h-10 w-10 bg-gold/10 rounded-full flex items-center justify-center">
+              <span className="text-gold text-xl">📊</span>
+            </div>
+            <p className="text-sm text-card-foreground">Real-time transaction monitoring</p>
+          </div>
+          <div className="bg-card p-4 rounded-lg border border-border flex items-center space-x-3">
+            <div className="h-10 w-10 bg-gold/10 rounded-full flex items-center justify-center">
+              <span className="text-gold text-xl">💰</span>
+            </div>
+            <p className="text-sm text-card-foreground">Advanced portfolio management tools</p>
+          </div>
         </div>
+        <Button 
+          onClick={connectWallet} 
+          className="bg-gold hover:bg-gold/90 text-black font-medium px-6 py-2 mt-4"
+        >
+          Connect Your Wallet
+        </Button>
       </div>
-      <h2 className="text-3xl font-bold mb-4 gold-gradient">Welcome to EtherGold Dashboard</h2>
-      <p className="text-muted-foreground mb-6 text-center max-w-md">
-        Connect your wallet to access advanced blockchain analytics, transaction monitoring, 
-        and financial management tools powered by Ethereum.
-      </p>
-      <div className="p-4 border border-gold/30 rounded-lg bg-secondary/30 text-sm text-muted-foreground max-w-md">
-        <p className="mb-2">🔐 Your private keys never leave your device</p>
-        <p className="mb-2">📊 Real-time transaction monitoring</p>
-        <p>💰 Advanced portfolio management tools</p>
-      </div>
-    </div>
+    </section>
   );
 };
 

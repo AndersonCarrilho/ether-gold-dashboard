@@ -25,7 +25,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
             {children}
           </main>
           <footer className="border-t border-border/50 p-4 text-center text-sm text-muted-foreground">
-            <span className="gold-gradient">Ether Gold Dashboard</span> © {new Date().getFullYear()}
+            <span className="gold-gradient">NSSC - EUA</span> © {new Date().getFullYear()}
           </footer>
         </div>
       </div>
