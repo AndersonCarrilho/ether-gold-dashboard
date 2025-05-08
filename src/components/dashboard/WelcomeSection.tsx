@@ -1,6 +1,9 @@
 
 import { Button } from "@/components/ui/button";
 import { useEthereum } from "@/hooks/use-ethereum";
+import BlockchainMessagingCard from "./BlockchainMessagingCard";
+import PaymentSolutionCard from "./PaymentSolutionCard";
+import ComplianceCard from "./ComplianceCard";
 
 const WelcomeSection = () => {
   const { connectWallet } = useEthereum();
@@ -38,6 +41,12 @@ const WelcomeSection = () => {
         >
           Connect Your Wallet
         </Button>
+      </div>
+      
+      <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6">
+        <BlockchainMessagingCard />
+        <ComplianceCard />
+        <PaymentSolutionCard />
       </div>
     </section>
   );

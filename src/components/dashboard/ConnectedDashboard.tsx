@@ -8,6 +8,11 @@ import MarketSection from "./MarketSection";
 import SystemOverview from "./SystemOverview";
 import PendingTransactions from "./PendingTransactions";
 import TransactionReceipt from "./TransactionReceipt";
+import BlockchainMessagingCard from "./BlockchainMessagingCard";
+import OperationalStatsCard from "./OperationalStatsCard";
+import ComplianceCard from "./ComplianceCard";
+import PaymentSolutionCard from "./PaymentSolutionCard";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface ConnectedDashboardProps {
   mockTransactions: any[];
@@ -52,10 +57,38 @@ const ConnectedDashboard = ({ mockTransactions }: ConnectedDashboardProps) => {
         onViewReceipt={handleViewReceipt} 
       />
       
-      <MarketSection />
+      <Tabs defaultValue="market" className="mt-6">
+        <TabsList className="grid grid-cols-4 mb-2">
+          <TabsTrigger value="market">Market</TabsTrigger>
+          <TabsTrigger value="messaging">Messaging</TabsTrigger>
+          <TabsTrigger value="compliance">Compliance</TabsTrigger>
+          <TabsTrigger value="payments">Payments</TabsTrigger>
+        </TabsList>
+        <TabsContent value="market">
+          <MarketSection />
+        </TabsContent>
+        <TabsContent value="messaging">
+          <div className="grid grid-cols-1 gap-4">
+            <BlockchainMessagingCard />
+          </div>
+        </TabsContent>
+        <TabsContent value="compliance">
+          <div className="grid grid-cols-1 gap-4">
+            <ComplianceCard />
+          </div>
+        </TabsContent>
+        <TabsContent value="payments">
+          <div className="grid grid-cols-1 gap-4">
+            <PaymentSolutionCard />
+          </div>
+        </TabsContent>
+      </Tabs>
       
-      <div className="mt-4">
-        <PendingTransactions />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+        <OperationalStatsCard />
+        <div className="mt-4 md:mt-0">
+          <PendingTransactions />
+        </div>
       </div>
       
       {selectedReceipt && (
