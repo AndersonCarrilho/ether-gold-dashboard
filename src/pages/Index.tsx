@@ -4,6 +4,7 @@ import DashboardLayout from "@/components/layout/DashboardLayout";
 import BackgroundAnimation from "@/components/ui/background-animation";
 import WelcomeSection from "@/components/dashboard/WelcomeSection";
 import ConnectedDashboard from "@/components/dashboard/ConnectedDashboard";
+import MarketSection from "@/components/dashboard/MarketSection";
 
 // Mock transaction data
 const mockTransactions = [
@@ -39,9 +40,14 @@ const Index = () => {
     <DashboardLayout>
       <div className="h-full w-full relative overflow-hidden">
         <BackgroundAnimation>
-          <div className="h-full">
+          <div className="h-full overflow-y-auto pb-6">
             {!connected ? (
-              <WelcomeSection />
+              <>
+                <WelcomeSection />
+                <div className="mt-8">
+                  <MarketSection />
+                </div>
+              </>
             ) : (
               <ConnectedDashboard mockTransactions={mockTransactions} />
             )}

@@ -4,17 +4,21 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { FileUp, Send, RefreshCw, FileCode2 } from "lucide-react";
 import { toast } from "sonner";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 interface FinancialMessage {
   id: string;
   type: "MT" | "ISO20022" | "JSON";
   content: string;
   timestamp: string;
+  filename: string;
 }
 
 const FinancialMessagingCard = () => {
   const [messages, setMessages] = useState<FinancialMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [selectedMessage, setSelectedMessage] = useState<FinancialMessage | null>(null);
+  const [showMessageContent, setShowMessageContent] = useState(false);
   
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     setIsLoading(true);
@@ -51,11 +55,16 @@ const FinancialMessagingCard = () => {
           id: `msg-${Date.now()}`,
           type: messageType,
           content: content,
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
+          filename: file.name
         };
         
         setMessages(prev => [newMessage, ...prev].slice(0, 5)); // Keep only last 5 messages
-        toast.success(`${messageType} message loaded successfully`);
+        toast.success(`${messageType} message loaded successfully. Click on it to view content.`);
+        
+        // Automatically select the newly loaded message
+        setSelectedMessage(newMessage);
+        setShowMessageContent(true);
       } catch (error) {
         console.error("Error reading file:", error);
         toast.error("Error reading file. Please try again.");
@@ -98,6 +107,23 @@ const FinancialMessagingCard = () => {
     }, 2000);
   };
   
+  const handleViewMessage = (message: FinancialMessage) => {
+    setSelectedMessage(message);
+    setShowMessageContent(true);
+  };
+  
+  const formatMessageContent = (content: string, type: string) => {
+    if (type === "JSON") {
+      try {
+        const parsed = JSON.parse(content);
+        return JSON.stringify(parsed, null, 2);
+      } catch {
+        return content;
+      }
+    }
+    return content;
+  };
+  
   return (
     <Card className="border-gold/20 bg-card/60 backdrop-blur-sm h-full">
       <CardHeader className="pb-3">
@@ -133,11 +159,15 @@ const FinancialMessagingCard = () => {
             {messages.length > 0 ? (
               <div className="space-y-2 max-h-40 overflow-y-auto">
                 {messages.map((message) => (
-                  <div key={message.id} className="flex items-center justify-between bg-background/50 rounded-sm p-1.5 text-xs">
+                  <div 
+                    key={message.id} 
+                    className="flex items-center justify-between bg-background/50 rounded-sm p-1.5 text-xs cursor-pointer hover:bg-background/80"
+                    onClick={() => handleViewMessage(message)}
+                  >
                     <div>
                       <span className="font-medium">{message.type} Message</span>
                       <div className="text-muted-foreground truncate max-w-32">
-                        {new Date(message.timestamp).toLocaleTimeString()}
+                        {message.filename} • {new Date(message.timestamp).toLocaleTimeString()}
                       </div>
                     </div>
                     <div className="flex gap-1">
@@ -145,7 +175,10 @@ const FinancialMessagingCard = () => {
                         variant="ghost" 
                         size="icon" 
                         className="h-6 w-6 text-gold hover:text-gold-light"
-                        onClick={() => convertToERC20(message.id)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          convertToERC20(message.id);
+                        }}
                       >
                         <RefreshCw className="h-3.5 w-3.5" />
                       </Button>
@@ -153,7 +186,10 @@ const FinancialMessagingCard = () => {
                         variant="ghost" 
                         size="icon" 
                         className="h-6 w-6 text-gold hover:text-gold-light"
-                        onClick={() => transmitMessage(message.id)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          transmitMessage(message.id);
+                        }}
                       >
                         <Send className="h-3.5 w-3.5" />
                       </Button>
@@ -174,6 +210,48 @@ const FinancialMessagingCard = () => {
           </div>
         </div>
       </CardContent>
+
+      {/* Message Content Dialog */}
+      <Dialog open={showMessageContent} onOpenChange={setShowMessageContent}>
+        <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {selectedMessage?.type} Message - {selectedMessage?.filename}
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="mt-4">
+            <div className="flex justify-between mb-2">
+              <span className="text-sm text-muted-foreground">
+                Uploaded: {selectedMessage && new Date(selectedMessage.timestamp).toLocaleString()}
+              </span>
+              <div className="space-x-2">
+                <Button 
+                  size="sm" 
+                  variant="outline"
+                  onClick={() => selectedMessage && convertToERC20(selectedMessage.id)}
+                >
+                  <RefreshCw className="h-3.5 w-3.5 mr-2" />
+                  Convert to ERC-20
+                </Button>
+                <Button 
+                  size="sm"
+                  onClick={() => selectedMessage && transmitMessage(selectedMessage.id)}
+                >
+                  <Send className="h-3.5 w-3.5 mr-2" />
+                  Transmit
+                </Button>
+              </div>
+            </div>
+            
+            <div className="bg-background/80 p-3 rounded-md border border-border/40 overflow-x-auto">
+              <pre className="text-xs whitespace-pre-wrap">
+                {selectedMessage && formatMessageContent(selectedMessage.content, selectedMessage.type)}
+              </pre>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 };
