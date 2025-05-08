@@ -77,9 +77,19 @@ const Sidebar = () => {
   return (
     <>
       <ShadcnSidebar className="border-r border-border/50 bg-sidebar text-sidebar-foreground">
-        <div className="flex h-16 items-center justify-center border-b border-border/50">
+        <div className="flex h-16 items-center justify-center border-b border-border/50 p-2">
           <SidebarTrigger className="h-6 w-6 text-gold" />
-          <h1 className="font-bold text-xl ml-3 gold-gradient">EtherGold</h1>
+          <div className="flex items-center">
+            <img 
+              src="/lovable-uploads/d03fc2ec-5ef6-49a8-bd27-a70cf77bf049.png" 
+              alt="NSSC Logo" 
+              className="h-9 mr-2"
+            />
+            <div className="flex flex-col">
+              <h1 className="font-bold text-lg text-cyan-400">NSSC - EUA</h1>
+              <p className="text-xs text-white/80">Neandro Silva Support Center</p>
+            </div>
+          </div>
         </div>
 
         <SidebarContent className="py-4">

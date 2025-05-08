@@ -41,16 +41,18 @@ const Index = () => {
       <div className="h-full w-full relative overflow-hidden">
         <BackgroundAnimation>
           <div className="h-full overflow-y-auto pb-6">
-            {!connected ? (
-              <>
-                <WelcomeSection />
-                <div className="mt-8">
-                  <MarketSection />
-                </div>
-              </>
-            ) : (
-              <ConnectedDashboard mockTransactions={mockTransactions} />
-            )}
+            <div className="container mx-auto">
+              {!connected ? (
+                <>
+                  <WelcomeSection />
+                  <div className="mt-8">
+                    <MarketSection />
+                  </div>
+                </>
+              ) : (
+                <ConnectedDashboard mockTransactions={mockTransactions} />
+              )}
+            </div>
           </div>
         </BackgroundAnimation>
       </div>
