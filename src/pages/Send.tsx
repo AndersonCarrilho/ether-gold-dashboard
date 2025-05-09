@@ -2,7 +2,10 @@
 import { useState } from "react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import TransferForm from "@/components/send/TransferForm";
+import LegacyTransferForm from "@/components/send/LegacyTransferForm";
 import TransactionReceipt from "@/components/dashboard/TransactionReceipt";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card } from "@/components/ui/card";
 
 const Send = () => {
   const [showReceipt, setShowReceipt] = useState(false);
@@ -20,7 +23,7 @@ const Send = () => {
       timestamp: new Date().toLocaleString(),
       blockNumber: 17126250,
       gasUsed: "21000",
-      status: "Confirmed",
+      status: "Confirmado",
     };
     
     setReceiptData(mockReceiptData);
@@ -30,10 +33,27 @@ const Send = () => {
   return (
     <DashboardLayout>
       <div className="flex flex-col gap-4">
-        <h1 className="text-2xl font-bold gold-gradient">Send Assets</h1>
+        <h1 className="text-2xl font-bold gold-gradient">Enviar Ativos</h1>
         
         <div className="mt-6">
-          <TransferForm onTransactionComplete={handleTransactionComplete} />
+          <Tabs defaultValue="standard">
+            <TabsList className="mb-4 w-full">
+              <TabsTrigger value="standard" className="flex-1">
+                Transação Padrão (EIP-1559)
+              </TabsTrigger>
+              <TabsTrigger value="legacy" className="flex-1">
+                Transação Legada (Tipo 0)
+              </TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="standard">
+              <TransferForm onTransactionComplete={handleTransactionComplete} />
+            </TabsContent>
+            
+            <TabsContent value="legacy">
+              <LegacyTransferForm onTransactionComplete={handleTransactionComplete} />
+            </TabsContent>
+          </Tabs>
         </div>
         
         {receiptData && (
