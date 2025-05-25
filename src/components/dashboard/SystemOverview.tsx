@@ -6,10 +6,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Activity } from "lucide-react";
 import TransactionRow from "./TransactionRow";
+import { EtherscanTransaction } from "@/services/etherscan"; // Import EtherscanTransaction
 
 interface SystemOverviewProps {
-  transactions: any[];
-  onViewReceipt: (tx: any) => void;
+  transactions: EtherscanTransaction[]; // Update prop type
+  onViewReceipt: (tx: EtherscanTransaction) => void; // Update prop type
 }
 
 const SystemOverview = ({ transactions, onViewReceipt }: SystemOverviewProps) => {

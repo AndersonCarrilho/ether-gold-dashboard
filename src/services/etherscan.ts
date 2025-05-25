@@ -33,6 +33,33 @@ export interface EnhancedReceipt {
   timestamp?: number;
 }
 
+// Interface for transactions returned by Etherscan's txlist action
+export interface EtherscanTransaction {
+  blockNumber: string;
+  timeStamp: string;
+  hash: string;
+  nonce: string;
+  blockHash: string;
+  transactionIndex: string;
+  from: string;
+  to: string;
+  value: string;
+  gas: string;
+  gasPrice: string;
+  isError: string;
+  txreceipt_status: string;
+  input: string;
+  contractAddress: string;
+  cumulativeGasUsed: string;
+  gasUsed: string;
+  confirmations: string;
+  // Fields for internal transactions (if applicable, add later)
+  // type?: string; // e.g., 'call', 'create'
+  // traceId?: string;
+  // isSuicide?: string; // for self-destructs
+  // errCode?: string; // if isError is "1"
+}
+
 export class EtherscanService {
   private apiKey: string;
   private baseUrl: string;
@@ -356,6 +383,41 @@ export class EtherscanService {
       console.error('Error in transaction broadcast:', error);
       onProgress?.('error', { message: error.message });
       throw error;
+    }
+  }
+
+  // Get list of transactions for an address
+  async getTransactionsForAddress(address: string): Promise<EtherscanTransaction[]> {
+    try {
+      const response = await axios.get(this.baseUrl, {
+        params: {
+          module: 'account',
+          action: 'txlist',
+          address,
+          startblock: 0, // Or a more specific start block
+          endblock: 99999999, // Or 'latest'
+          page: 1,
+          offset: 50, // Fetch up to 50 transactions, adjust as needed
+          sort: 'desc', // 'asc' for ascending, 'desc' for descending
+          apikey: this.apiKey
+        }
+      });
+
+      if (response.data.status === '1') { // '1' indicates success
+        return response.data.result as EtherscanTransaction[];
+      } else if (response.data.status === '0' && response.data.message === 'No transactions found') {
+        return []; // Return empty array if no transactions
+      } else {
+        // Handle other API errors or unexpected statuses
+        throw new Error(response.data.message || 'Failed to fetch transactions');
+      }
+    } catch (error: any) {
+      console.error('Error fetching transactions for address:', error.message);
+      // It might be useful to check error.response for more details if it's an HTTP error
+      if (error.response) {
+        console.error('Etherscan API Error:', error.response.data);
+      }
+      throw new Error(`Failed to fetch transactions: ${error.message}`);
     }
   }
 }
