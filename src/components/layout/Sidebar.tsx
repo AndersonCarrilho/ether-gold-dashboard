@@ -24,6 +24,7 @@ import {
   Coins,
   HardDrive,
   FileText,
+  Zap, // Added Zap icon for Flash Loans
 } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 
@@ -67,6 +68,11 @@ const sidebarItems = [
     title: "Settings",
     href: "/settings",
     icon: Settings,
+  },
+  {
+    title: "Flash Loans",
+    href: "/flashloans",
+    icon: Zap, // Using Zap icon
   },
 ];
 
