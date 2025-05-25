@@ -598,7 +598,7 @@ const FlashLoansPage = () => {
                   <pre className="bg-secondary p-3 rounded-md text-xs overflow-x-auto"><code>
                     mkdir my-flashloan-sim && cd my-flashloan-sim<br/>
                     npm init -y<br/>
-                    npm install --save-dev hardhat @nomicfoundation/hardhat-toolbox dotenv ethers
+                    npm install --save-dev hardhat @nomicfoundation/hardhat-toolbox dotenv ethers @openzeppelin/contracts
                   </code></pre>
                   <p className="mt-2 mb-1">Initialize a sample Hardhat project (choose "Create a TypeScript project" or "Create a JavaScript project"):</p>
                   <pre className="bg-secondary p-3 rounded-md text-xs overflow-x-auto"><code>npx hardhat</code></pre>
@@ -755,6 +755,9 @@ contract FlashLoanProxy {
     }
 }`}
                   </code></pre>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Note: The <code>receiveFlashLoan</code> function signature and repayment mechanism (e.g., approving the provider or direct transfer) may need to be adapted based on the specific flash loan provider you intend to use (e.g., Aave, Uniswap V2/V3, MakerDAO). This example is generic.
+                  </p>
                 </div>
 
                 <div>
@@ -817,12 +820,41 @@ main().catch((error) => {
                 </div>
                 
                 <div>
-                  <h4 className="font-semibold text-md mb-2">(Optional) Step 9: RPC Interceptor</h4>
-                  <p>
-                    For very advanced scenarios, such as faking specific token balances on DEXs or altering contract states for testing edge cases, an RPC interceptor (like a custom Express.js server that sits between your app and the real RPC, or tools like Tenderly Forks) might be used. Setting this up is complex and beyond the scope of this basic guide and dashboard functionality.
+                  <h4 className="font-semibold text-md mb-2">Step 9 (Advanced): Understanding RPC Interception</h4>
+                  <p className="mb-1">
+                    For highly specialized testing scenarios, such as faking specific token balances (like the 1 million USDT in the <code>HarpyFlashLoanFork</code> example you provided earlier), simulating unique contract states, or testing edge cases of your strategy under specific blockchain conditions, you might use an RPC interceptor.
+                  </p>
+                  <p className="mb-1">
+                    An <strong>RPC interceptor</strong> is essentially a local proxy server that sits between your wallet (e.g., Metamask) and your actual blockchain RPC endpoint (in this case, your local Hardhat Node). You configure Metamask to send its requests to the interceptor, and the interceptor can then:
+                  </p>
+                  <ul className="list-disc pl-6 space-y-1 my-2">
+                    <li>Forward the request directly to the Hardhat Node.</li>
+                    <li>Modify the request before forwarding it.</li>
+                    <li>Modify the response from the Hardhat Node before sending it back to Metamask.</li>
+                  </ul>
+                  <p className="mb-1">
+                    The <code>rpc-fake/server.js</code> (using Node.js and Express) from your <code>HarpyFlashLoanFork</code> example is a perfect illustration of such an interceptor. It specifically listened for <code>eth_call</code> methods to a particular USDT contract address and returned a fake large balance.
+                  </p>
+                  <h5 className="font-medium text-sm mt-3 mb-1">Typical Data Flow with an Interceptor:</h5>
+                  <ol className="list-decimal pl-6 space-y-1 text-xs">
+                    <li>Metamask (Network configured to <code>http://localhost:PORT_OF_INTERCEPTOR</code>, e.g., <code>8555</code>).</li>
+                    <li>Your Local RPC Interceptor (e.g., Node.js Express server running on port <code>8555</code>).</li>
+                    <li>Interceptor forwards requests to Your Local Hardhat Node RPC (<code>http://localhost:8545</code>).</li>
+                    <li>Hardhat Node (forking Mainnet) gets actual chain data from Infura (or your configured <code>MAINNET_RPC_URL</code>).</li>
+                  </ol>
+                  <p className="mt-2 mb-1">
+                    <strong>Setting up an RPC Interceptor:</strong>
+                  </p>
+                  <ul className="list-disc pl-6 space-y-1 my-2 text-xs">
+                    <li>This is an advanced setup and requires running a separate local server process.</li>
+                    <li>You would need to write or use an existing script for this (like the Express.js example).</li>
+                    <li>The dashboard itself does not provide or manage this interceptor. You would use the dashboard by pointing Metamask to your interceptor's URL.</li>
+                  </ul>
+                  <p className="text-xs text-muted-foreground">
+                    This technique offers powerful testing capabilities but requires a good understanding of Ethereum RPC methods and server-side scripting.
                   </p>
                 </div>
-
+                
               </CardContent>
             </Card>
           </CollapsibleContent>
