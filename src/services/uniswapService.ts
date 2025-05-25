@@ -1,5 +1,6 @@
 import { ethers, BigNumber } from 'ethers';
 import { UNISWAP_V2_ROUTER_ADDRESS, UNISWAP_V3_QUOTER_V2_ADDRESS } from '../constants/contracts';
+import { getDefaultRpcUrl } from '../lib/rpcUtils'; // Import the new utility
 
 // Uniswap V2 Router ABI (can remain here or be moved to constants)
 const UNISWAP_V2_ROUTER_ABI = [{
@@ -47,10 +48,11 @@ export async function getUniswapV2Price(
   tokenIn: string,
   tokenOut: string,
   amountIn: BigNumber,
-  provider: ethers.providers.Provider
+  provider?: ethers.providers.Provider // Provider is now optional
 ): Promise<BigNumber> {
+  const currentProvider = provider || new ethers.providers.StaticJsonRpcProvider(getDefaultRpcUrl('mainnet'));
   try {
-    const router = new ethers.Contract(UNISWAP_V2_ROUTER_ADDRESS, UNISWAP_V2_ROUTER_ABI, provider);
+    const router = new ethers.Contract(UNISWAP_V2_ROUTER_ADDRESS, UNISWAP_V2_ROUTER_ABI, currentProvider);
     const path = [tokenIn, tokenOut]; // Direct path
     
     // If dealing with ETH, ensure one of the tokens is WETH for V2 paths usually.
@@ -81,13 +83,14 @@ export async function getUniswapV3Price(
   tokenOut: string,
   amountIn: BigNumber,
   poolFee: number, // e.g., 3000 for 0.3%
-  provider: ethers.providers.Provider
+  provider?: ethers.providers.Provider // Provider is now optional
 ): Promise<BigNumber> {
+  const currentProvider = provider || new ethers.providers.StaticJsonRpcProvider(getDefaultRpcUrl('mainnet'));
   try {
-    const quoter = new ethers.Contract(UNISWAP_V3_QUOTER_V2_ADDRESS, UNISWAP_V3_QUOTER_V2_ABI, provider);
+    const quoter = new ethers.Contract(UNISWAP_V3_QUOTER_V2_ADDRESS, UNISWAP_V3_QUOTER_V2_ABI, currentProvider);
     const sqrtPriceLimitX96 = 0; // No price limit
 
-    // Using callStatic as quoteExactInputSingle is a view-like function (even if marked nonpayable)
+    // Using callStatic as quoteExactInputSingle is a view-like function
     const amountOut = await quoter.callStatic.quoteExactInputSingle(
       tokenIn,
       tokenOut,
