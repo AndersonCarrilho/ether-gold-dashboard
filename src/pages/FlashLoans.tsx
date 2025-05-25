@@ -4,11 +4,13 @@ import { Card, CardContent, CardHeader, CardTitle, CardFooter, CardDescription }
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { ChevronsUpDown } from "lucide-react";
+import { ChevronsUpDown, Loader2 } from "lucide-react"; // Added Loader2
 import { Label } from "@/components/ui/label";
-import { ethers } from "ethers";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"; // Added Select
+import { ethers, BigNumber } from "ethers";
 import { useEthereum } from "@/hooks/use-ethereum";
 import { toast } from "sonner";
+import { getUniswapV2Price, getUniswapV3Price } from "@/services/uniswapService";
 
 // ABI for the FlashLoanProxy's executeLoan function
 const flashLoanProxyAbi = [{ 
@@ -40,23 +42,34 @@ const FlashLoansPage = () => {
 
   // State for Flash Loan Strategy Simulator
   const [simBorrowTokenSymbol, setSimBorrowTokenSymbol] = useState("USDC");
+  const [simBorrowTokenAddress, setSimBorrowTokenAddress] = useState(""); // New
   const [simBorrowAmount, setSimBorrowAmount] = useState("1000");
   const [simTokenADecimals, setSimTokenADecimals] = useState("6");
-  const [simDex1Name, setSimDex1Name] = useState("Uniswap V2");
-  const [simTokenBPriceOnDex1, setSimTokenBPriceOnDex1] = useState("0.0005"); // e.g., 1 USDC = 0.0005 WETH
+  
+  const [simDex1Type, setSimDex1Type] = useState("uniswapV2"); // New: "uniswapV2" or "uniswapV3"
+  const [simV3PoolFeeDex1, setSimV3PoolFeeDex1] = useState("3000"); // New: e.g., 500, 3000, 10000
   const [simTokenBSymbol, setSimTokenBSymbol] = useState("WETH");
+  const [simTokenBAddress, setSimTokenBAddress] = useState(""); // New
   const [simTokenBDecimals, setSimTokenBDecimals] = useState("18");
-  const [simDex2Name, setSimDex2Name] = useState("Sushiswap");
-  const [simTokenAPriceOnDex2, setSimTokenAPriceOnDex2] = useState("2010");    // e.g., 1 WETH = 2010 USDC
+
+  const [simDex2Type, setSimDex2Type] = useState("uniswapV2"); // New: "uniswapV2" or "uniswapV3"
+  const [simV3PoolFeeDex2, setSimV3PoolFeeDex2] = useState("3000"); // New
+  
   const [simFlashLoanFeePercentage, setSimFlashLoanFeePercentage] = useState("0.09");
-  const [simulationResult, setSimulationResult] = useState<{
+  
+  const [fetchedAmountTokenB, setFetchedAmountTokenB] = useState<BigNumber | null>(null); // New
+  const [fetchedFinalAmountTokenA, setFetchedFinalAmountTokenA] = useState<BigNumber | null>(null); // New
+  const [isFetchingPrices, setIsFetchingPrices] = useState(false); // New
+  const [priceFetchingError, setPriceFetchingError] = useState<string | null>(null); // New
+  
+  const [simulationResult, setSimulationResult] = useState<{ // Old simulation result based on manual prices
     amountTokenB: number;
     finalAmountTokenA: number;
     grossProfit: number;
     loanFee: number;
     netProfit: number;
   } | null>(null);
-  const [simError, setSimError] = useState<string | null>(null);
+  const [simError, setSimError] = useState<string | null>(null); // For general simulation errors
 
 
   const handlePrepareTransaction = () => {
@@ -146,71 +159,173 @@ const FlashLoansPage = () => {
     }
   };
 
-  const handleSimulateStrategy = () => {
+  // This is the old simulation logic based on manual price inputs.
+  // It will be updated/replaced in the next step to use fetched prices.
+  const handleManualSimulateStrategy = () => {
     setSimError(null);
     setSimulationResult(null);
+    setPriceFetchingError(null);
+    setFetchedAmountTokenB(null);
+    setFetchedFinalAmountTokenA(null);
 
+    // For now, this function will just demonstrate the old calculation if needed,
+    // or can be left as a placeholder. The main button will call handleFetchAndSimulate.
+    // For the purpose of this step, we'll keep its old logic to show it's distinct.
     const inputs = [
-      simBorrowAmount, simTokenADecimals, simTokenBPriceOnDex1,
-      simTokenBDecimals, simTokenAPriceOnDex2, simFlashLoanFeePercentage,
+      simBorrowAmount, simTokenADecimals, /*simTokenBPriceOnDex1 (removed)*/
+      simTokenBDecimals, /*simTokenAPriceOnDex2 (removed)*/ simFlashLoanFeePercentage,
       simBorrowTokenSymbol, simTokenBSymbol
     ];
 
-    if (inputs.some(input => input.trim() === "")) {
-      setSimError("All simulator input fields are required.");
-      toast.error("Simulator Error", { description: "All simulator input fields are required." });
+    if (inputs.some(input => typeof input === 'string' && input.trim() === "")) {
+      setSimError("Core simulator input fields are required (amount, decimals, symbols, fee).");
+      toast.error("Simulator Error", { description: "Core simulator input fields are required." });
+      return;
+    }
+    
+    // This part is just for placeholder, actual simulation will use fetched prices
+    toast.info("Manual Simulation", { description: "This is a placeholder for manual simulation logic if prices were manually entered. Real simulation will use fetched prices."});
+    // Example:
+    // const borrowAmount = parseFloat(simBorrowAmount);
+    // const feePercentage = parseFloat(simFlashLoanFeePercentage);
+    // const loanFee = borrowAmount * (feePercentage / 100);
+    // setSimulationResult({ amountTokenB: 0, finalAmountTokenA: 0, grossProfit: 0, loanFee, netProfit: -loanFee });
+
+  };
+
+  const handleFetchAndSimulate = async () => {
+    setIsFetchingPrices(true);
+    setPriceFetchingError(null);
+    setFetchedAmountTokenB(null);
+    setFetchedFinalAmountTokenA(null);
+    setSimulationResult(null);
+    setSimError(null); // Clear general simulation errors as well
+
+    if (!provider) {
+      toast.error("Wallet not connected", { description: "Please connect your wallet to fetch live prices." });
+      setPriceFetchingError("Wallet not connected.");
+      setIsFetchingPrices(false);
       return;
     }
 
+    // --- Input Validation ---
+    const requiredFields = {
+      simBorrowTokenAddress, simBorrowAmount, simTokenADecimals,
+      simTokenBAddress, simTokenBDecimals,
+      simDex1Type, simDex2Type, simFlashLoanFeePercentage
+    };
+
+    for (const [key, value] of Object.entries(requiredFields)) {
+      if (!value || String(value).trim() === "") {
+        const errorMessage = `Missing input: ${key.replace('sim', '').replace(/([A-Z])/g, ' $1').trim()}`;
+        toast.error("Validation Error", { description: errorMessage });
+        setPriceFetchingError(errorMessage);
+        setIsFetchingPrices(false);
+        return;
+      }
+    }
+    if (!ethers.utils.isAddress(simBorrowTokenAddress) || !ethers.utils.isAddress(simTokenBAddress)) {
+      toast.error("Validation Error", { description: "Invalid Token A or Token B address." });
+      setPriceFetchingError("Invalid Token A or Token B address.");
+      setIsFetchingPrices(false);
+      return;
+    }
+    if (simDex1Type === 'uniswapV3' && (!simV3PoolFeeDex1 || isNaN(parseInt(simV3PoolFeeDex1)))) {
+      toast.error("Validation Error", { description: "DEX 1 V3 Pool Fee is invalid." });
+      setPriceFetchingError("DEX 1 V3 Pool Fee is invalid.");
+      setIsFetchingPrices(false);
+      return;
+    }
+    if (simDex2Type === 'uniswapV3' && (!simV3PoolFeeDex2 || isNaN(parseInt(simV3PoolFeeDex2)))) {
+      toast.error("Validation Error", { description: "DEX 2 V3 Pool Fee is invalid." });
+      setPriceFetchingError("DEX 2 V3 Pool Fee is invalid.");
+      setIsFetchingPrices(false);
+      return;
+    }
+    // --- End Input Validation ---
+
+    let amountTokenA_BN: BigNumber;
     try {
-      const borrowAmount = parseFloat(simBorrowAmount);
-      // const tokenADecimalsNum = parseInt(simTokenADecimals); // Not directly used in float calc
-      const price1 = parseFloat(simTokenBPriceOnDex1);
-      // const tokenBDecimalsNum = parseInt(simTokenBDecimals); // Not directly used in float calc
-      const price2 = parseFloat(simTokenAPriceOnDex2);
-      const feePercentage = parseFloat(simFlashLoanFeePercentage);
+      amountTokenA_BN = ethers.utils.parseUnits(simBorrowAmount, parseInt(simTokenADecimals));
+    } catch (e) {
+      toast.error("Input Error", { description: "Invalid Borrow Amount or Token A Decimals." });
+      setPriceFetchingError("Invalid Borrow Amount or Token A Decimals.");
+      setIsFetchingPrices(false);
+      return;
+    }
 
-      if (isNaN(borrowAmount) || isNaN(price1) || isNaN(price2) || isNaN(feePercentage)) {
-        setSimError("Invalid numeric input for amounts, prices, or fee.");
-        toast.error("Simulator Error", { description: "Invalid numeric input provided." });
-        return;
+    let receivedAmountTokenB_BN: BigNumber;
+    try {
+      toast.info("Fetching price on DEX 1...", { id: "dex1-fetch" });
+      if (simDex1Type === 'uniswapV2') {
+        receivedAmountTokenB_BN = await getUniswapV2Price(simBorrowTokenAddress, simTokenBAddress, amountTokenA_BN, provider);
+      } else { // uniswapV3
+        receivedAmountTokenB_BN = await getUniswapV3Price(simBorrowTokenAddress, simTokenBAddress, amountTokenA_BN, parseInt(simV3PoolFeeDex1), provider);
       }
-      if (borrowAmount <= 0 || price1 <= 0 || price2 <= 0 || feePercentage < 0) {
-        setSimError("Amounts, prices, and fees must be positive values.");
-         toast.error("Simulator Error", { description: "Amounts, prices, and fees must be positive." });
-        return;
+      setFetchedAmountTokenB(receivedAmountTokenB_BN);
+      toast.success("Price from DEX 1 Fetched!", { id: "dex1-fetch", description: `Received ${ethers.utils.formatUnits(receivedAmountTokenB_BN, simTokenBDecimals)} ${simTokenBSymbol}`});
+    } catch (e: any) {
+      console.error("Error fetching price from DEX 1:", e);
+      const errMsg = `Error fetching price from DEX 1: ${e.message}`;
+      setPriceFetchingError(errMsg);
+      toast.error("DEX 1 Error", { id: "dex1-fetch", description: errMsg });
+      setIsFetchingPrices(false);
+      return;
+    }
+
+    if (!receivedAmountTokenB_BN || receivedAmountTokenB_BN.isZero()) {
+      const errMsg = "Could not get a valid amount from Step 1 (DEX 1) to proceed.";
+      setPriceFetchingError(errMsg);
+      toast.error("DEX 1 Result Error", { description: errMsg });
+      setIsFetchingPrices(false);
+      return;
+    }
+
+    let finalAmountTokenA_BN: BigNumber;
+    try {
+      toast.info("Fetching price on DEX 2...", { id: "dex2-fetch" });
+      if (simDex2Type === 'uniswapV2') {
+        finalAmountTokenA_BN = await getUniswapV2Price(simTokenBAddress, simBorrowTokenAddress, receivedAmountTokenB_BN, provider);
+      } else { // uniswapV3
+        finalAmountTokenA_BN = await getUniswapV3Price(simTokenBAddress, simBorrowTokenAddress, receivedAmountTokenB_BN, parseInt(simV3PoolFeeDex2), provider);
       }
+      setFetchedFinalAmountTokenA(finalAmountTokenA_BN);
+      toast.success("Price from DEX 2 Fetched!", { id: "dex2-fetch", description: `Received ${ethers.utils.formatUnits(finalAmountTokenA_BN, simTokenADecimals)} ${simBorrowTokenSymbol}` });
+    } catch (e: any) {
+      console.error("Error fetching price from DEX 2:", e);
+      const errMsg = `Error fetching price from DEX 2: ${e.message}`;
+      setPriceFetchingError(errMsg);
+      toast.error("DEX 2 Error", { id: "dex2-fetch", description: errMsg });
+      setIsFetchingPrices(false);
+      return;
+    }
 
+    // --- Profit Calculation ---
+    try {
+      const finalAmountTokenA_float = parseFloat(ethers.utils.formatUnits(finalAmountTokenA_BN, parseInt(simTokenADecimals)));
+      const initialBorrowAmount_float = parseFloat(simBorrowAmount); // Already a string representing float
 
-      // Calculate Amount of Token B after Step 1
-      const amountTokenB = borrowAmount * price1;
-
-      // Calculate Final Amount of Token A after Step 2
-      const finalAmountTokenA = amountTokenB * price2;
-
-      // Calculate Gross Profit
-      const grossProfit = finalAmountTokenA - borrowAmount;
-
-      // Calculate Loan Fee
-      const loanFee = borrowAmount * (feePercentage / 100);
-
-      // Calculate Net Profit
+      const grossProfit = finalAmountTokenA_float - initialBorrowAmount_float;
+      const loanFee = initialBorrowAmount_float * (parseFloat(simFlashLoanFeePercentage) / 100);
       const netProfit = grossProfit - loanFee;
 
       setSimulationResult({
-        amountTokenB,
-        finalAmountTokenA,
+        amountTokenB: parseFloat(ethers.utils.formatUnits(receivedAmountTokenB_BN, parseInt(simTokenBDecimals))), // For display consistency with current simulationResult structure
+        finalAmountTokenA: finalAmountTokenA_float,
         grossProfit,
         loanFee,
         netProfit,
       });
-      toast.success("Simulation Complete", { description: "Review the estimated results below." });
-
+      toast.success("Live prices fetched and simulation updated!");
+      setPriceFetchingError(null); // Clear previous errors if successful
     } catch (e: any) {
-      console.error("Error during simulation:", e);
-      setSimError(`Simulation Error: ${e.message || "Unknown error during calculation."}`);
-      toast.error("Simulation Error", { description: e.message || "Could not perform simulation." });
+        console.error("Error calculating profit:", e);
+        const errMsg = `Error calculating profit: ${e.message}`;
+        setSimError(errMsg); // Use simError for calculation errors post-fetching
+        toast.error("Calculation Error", { description: errMsg });
     }
+    
+    setIsFetchingPrices(false);
   };
 
 
@@ -219,7 +334,7 @@ const FlashLoansPage = () => {
       <div className="flex flex-col gap-6">
         <h1 className="text-3xl font-bold gold-gradient">Flash Loans</h1>
         
-        {/* Section for Configuring and Executing Flash Loans */}
+        {/* Section for Configuring and Executing Flash Loans (remains unchanged) */}
         <Card>
           <CardHeader>
             <CardTitle>Configure & Execute Flash Loan</CardTitle>
@@ -234,7 +349,7 @@ const FlashLoansPage = () => {
               <Input id="providerAddress" value={providerAddress} onChange={(e) => setProviderAddress(e.target.value)} placeholder="0x..." />
             </div>
             <div>
-              <Label htmlFor="tokenAddress">Token Address (ERC20)</Label>
+              <Label htmlFor="tokenAddress">Token Address (ERC20 for Loan)</Label>
               <Input id="tokenAddress" value={tokenAddress} onChange={(e) => setTokenAddress(e.target.value)} placeholder="0x..." />
             </div>
             <div className="grid grid-cols-2 gap-4">
@@ -243,7 +358,7 @@ const FlashLoansPage = () => {
                 <Input id="loanAmount" type="number" value={loanAmount} onChange={(e) => setLoanAmount(e.target.value)} placeholder="e.g., 100" />
               </div>
               <div>
-                <Label htmlFor="tokenDecimals">Borrowed Token Decimals</Label>
+                <Label htmlFor="tokenDecimals">Loan Token Decimals</Label>
                 <Input id="tokenDecimals" type="number" value={tokenDecimals} onChange={(e) => setTokenDecimals(e.target.value)} placeholder="e.g., 18" />
               </div>
             </div>
@@ -303,29 +418,36 @@ const FlashLoansPage = () => {
           </Card>
         )}
 
-        {/* Client-Side Flash Loan Strategy Simulator Section */}
+        {/* Client-Side Flash Loan Strategy Simulator Section - Updated UI */}
         <Card>
           <CardHeader>
-            <CardTitle>Client-Side Flash Loan Strategy Simulator</CardTitle>
+            <CardTitle>Client-Side Flash Loan Strategy Simulator (with Live Price Fetching)</CardTitle>
             <CardDescription className="text-sm text-muted-foreground pt-2">
-              This is a simplified client-side estimation for educational purposes. Actual on-chain results will vary due to price slippage, gas fees, and real-time market conditions. Always do your own research before executing real transactions.
+              Configure your arbitrage strategy. This tool will fetch live prices from Uniswap V2/V3 to estimate potential profits.
+              This is a simplified client-side estimation. Actual on-chain results will vary.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             {/* Inputs for Borrowing */}
             <div className="space-y-2 p-4 border rounded-md">
-              <h3 className="font-semibold text-md gold-gradient">Step 0: Borrow Setup</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <h3 className="font-semibold text-md gold-gradient">Step 0: Borrow Setup (Token A)</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="simBorrowTokenSymbol">Token to Borrow (Symbol)</Label>
+                  <Label htmlFor="simBorrowTokenSymbol">Token A Symbol</Label>
                   <Input id="simBorrowTokenSymbol" value={simBorrowTokenSymbol} onChange={(e) => setSimBorrowTokenSymbol(e.target.value)} placeholder="e.g., USDC" />
                 </div>
                 <div>
-                  <Label htmlFor="simBorrowAmount">Borrow Amount</Label>
+                  <Label htmlFor="simBorrowTokenAddress">Token A Address</Label>
+                  <Input id="simBorrowTokenAddress" value={simBorrowTokenAddress} onChange={(e) => setSimBorrowTokenAddress(e.target.value)} placeholder="0x..." />
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+                 <div>
+                  <Label htmlFor="simBorrowAmount">Borrow Amount (Token A)</Label>
                   <Input id="simBorrowAmount" type="text" value={simBorrowAmount} onChange={(e) => setSimBorrowAmount(e.target.value)} placeholder="e.g., 1000" />
                 </div>
                 <div>
-                  <Label htmlFor="simTokenADecimals">Borrowed Token Decimals</Label>
+                  <Label htmlFor="simTokenADecimals">Token A Decimals</Label>
                   <Input id="simTokenADecimals" type="text" value={simTokenADecimals} onChange={(e) => setSimTokenADecimals(e.target.value)} placeholder="e.g., 6" />
                 </div>
               </div>
@@ -333,42 +455,78 @@ const FlashLoansPage = () => {
 
             {/* Inputs for Step 1 (Swap A -> B) */}
             <div className="space-y-2 p-4 border rounded-md">
-              <h3 className="font-semibold text-md gold-gradient">Step 1: Swap Borrowed Token (Token A) for Target Token (Token B)</h3>
-               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <h3 className="font-semibold text-md gold-gradient">Step 1: Swap Token A for Token B on DEX 1</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="simDex1Name">DEX 1 Name</Label>
-                  <Input id="simDex1Name" value={simDex1Name} onChange={(e) => setSimDex1Name(e.target.value)} placeholder="e.g., Uniswap V2" />
+                  <Label htmlFor="simDex1Type">DEX 1 Type</Label>
+                  <Select value={simDex1Type} onValueChange={(value) => setSimDex1Type(value)}>
+                    <SelectTrigger><SelectValue placeholder="Select DEX Type" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="uniswapV2">Uniswap V2</SelectItem>
+                      <SelectItem value="uniswapV3">Uniswap V3</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
-                <div>
-                  <Label htmlFor="simTokenBSymbol">Target Token (Symbol)</Label>
-                  <Input id="simTokenBSymbol" value={simTokenBSymbol} onChange={(e) => setSimTokenBSymbol(e.target.value)} placeholder="e.g., WETH" />
-                </div>
+                {simDex1Type === 'uniswapV3' && (
+                  <div>
+                    <Label htmlFor="simV3PoolFeeDex1">DEX 1 Pool Fee (Uniswap V3)</Label>
+                    <Input id="simV3PoolFeeDex1" value={simV3PoolFeeDex1} onChange={(e) => setSimV3PoolFeeDex1(e.target.value)} placeholder="e.g., 3000 for 0.3%" />
+                  </div>
+                )}
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
                 <div>
-                  <Label htmlFor="simTokenBDecimals">Target Token Decimals</Label>
-                  <Input id="simTokenBDecimals" type="text" value={simTokenBDecimals} onChange={(e) => setSimTokenBDecimals(e.target.value)} placeholder="e.g., 18" />
+                  <Label htmlFor="simTokenBSymbol">Token B Symbol</Label>
+                  <Input id="simTokenBSymbol" value={simTokenBSymbol} onChange={(e) => setSimTokenBSymbol(e.target.value)} placeholder="e.g., WETH" />
                 </div>
                 <div>
-                  <Label htmlFor="simTokenBPriceOnDex1">Price on DEX 1 (1 Token A = X Token B)</Label>
-                  <Input id="simTokenBPriceOnDex1" type="text" value={simTokenBPriceOnDex1} onChange={(e) => setSimTokenBPriceOnDex1(e.target.value)} placeholder="e.g., 0.0005" />
+                  <Label htmlFor="simTokenBAddress">Token B Address</Label>
+                  <Input id="simTokenBAddress" value={simTokenBAddress} onChange={(e) => setSimTokenBAddress(e.target.value)} placeholder="0x..." />
                 </div>
               </div>
+               <div className="pt-2">
+                  <Label htmlFor="simTokenBDecimals">Token B Decimals</Label>
+                  <Input id="simTokenBDecimals" type="text" value={simTokenBDecimals} onChange={(e) => setSimTokenBDecimals(e.target.value)} placeholder="e.g., 18" />
+                </div>
+              {fetchedAmountTokenB && (
+                <p className="text-sm pt-2">
+                  Estimated {simTokenBSymbol} from DEX 1: 
+                  <span className="font-mono text-green-400 pl-1">
+                    {ethers.utils.formatUnits(fetchedAmountTokenB, parseInt(simTokenBDecimals || "18"))}
+                  </span>
+                </p>
+              )}
             </div>
 
             {/* Inputs for Step 2 (Swap B -> A) */}
             <div className="space-y-2 p-4 border rounded-md">
-              <h3 className="font-semibold text-md gold-gradient">Step 2: Swap Target Token (Token B) back to Borrowed Token (Token A)</h3>
+              <h3 className="font-semibold text-md gold-gradient">Step 2: Swap Token B back to Token A on DEX 2</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="simDex2Name">DEX 2 Name</Label>
-                  <Input id="simDex2Name" value={simDex2Name} onChange={(e) => setSimDex2Name(e.target.value)} placeholder="e.g., Sushiswap" />
+                  <Label htmlFor="simDex2Type">DEX 2 Type</Label>
+                   <Select value={simDex2Type} onValueChange={(value) => setSimDex2Type(value)}>
+                    <SelectTrigger><SelectValue placeholder="Select DEX Type" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="uniswapV2">Uniswap V2</SelectItem>
+                      <SelectItem value="uniswapV3">Uniswap V3</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
-                <div>
-                  <Label htmlFor="simTokenAPriceOnDex2">Price on DEX 2 (1 Token B = Y Token A)</Label>
-                  <Input id="simTokenAPriceOnDex2" type="text" value={simTokenAPriceOnDex2} onChange={(e) => setSimTokenAPriceOnDex2(e.target.value)} placeholder="e.g., 2010" />
-                </div>
+                {simDex2Type === 'uniswapV3' && (
+                  <div>
+                    <Label htmlFor="simV3PoolFeeDex2">DEX 2 Pool Fee (Uniswap V3)</Label>
+                    <Input id="simV3PoolFeeDex2" value={simV3PoolFeeDex2} onChange={(e) => setSimV3PoolFeeDex2(e.target.value)} placeholder="e.g., 3000 for 0.3%" />
+                  </div>
+                )}
               </div>
+               {fetchedFinalAmountTokenA && (
+                <p className="text-sm pt-2">
+                  Estimated {simBorrowTokenSymbol} from DEX 2: 
+                  <span className="font-mono text-green-400 pl-1">
+                    {ethers.utils.formatUnits(fetchedFinalAmountTokenA, parseInt(simTokenADecimals || "18"))}
+                  </span>
+                </p>
+              )}
             </div>
             
             {/* Input for Fee */}
@@ -381,15 +539,24 @@ const FlashLoansPage = () => {
             </div>
           </CardContent>
           <CardFooter className="flex flex-col items-start gap-4">
-            <Button onClick={handleSimulateStrategy} className="w-full md:w-auto">Simulate Strategy</Button>
-            {simError && <p className="text-sm text-red-500">{simError}</p>}
+            <Button onClick={handleFetchAndSimulate} className="w-full md:w-auto" disabled={isFetchingPrices}>
+              {isFetchingPrices ? (
+                <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Fetching Prices...</>
+              ) : (
+                "Fetch Live Prices & Simulate Strategy"
+              )}
+            </Button>
+            {priceFetchingError && <p className="text-sm text-red-500">{priceFetchingError}</p>}
+            {priceFetchingError && <p className="text-sm text-red-500">{priceFetchingError}</p>}
+            {simError && <p className="text-sm text-red-500 mt-2">{simError}</p>}
             {simulationResult && (
               <div className="w-full p-4 border rounded-md bg-secondary/30 space-y-1">
-                <h4 className="font-semibold text-lg pb-2">Simulation Results:</h4>
-                <p>Estimated {simTokenBSymbol} from {simDex1Name}: <span className="font-mono">{simulationResult.amountTokenB.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 8})}</span></p>
-                <p>Estimated {simBorrowTokenSymbol} from {simDex2Name}: <span className="font-mono">{simulationResult.finalAmountTokenA.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span></p>
+                <h4 className="font-semibold text-lg pb-2">Live Simulation Results:</h4>
+                <p>Fetched {simTokenBSymbol} from DEX 1: <span className="font-mono">{simulationResult.amountTokenB.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 8})}</span></p>
+                <p>Fetched {simBorrowTokenSymbol} from DEX 2: <span className="font-mono">{simulationResult.finalAmountTokenA.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span></p>
+                <hr className="my-1 border-border/50"/>
                 <p>Gross Profit: <span className="font-mono">{simulationResult.grossProfit.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span> {simBorrowTokenSymbol}</p>
-                <p>Flash Loan Fee: <span className="font-mono">{simulationResult.loanFee.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span> {simBorrowTokenSymbol}</p>
+                <p>Flash Loan Fee ({simFlashLoanFeePercentage}%): <span className="font-mono">{simulationResult.loanFee.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span> {simBorrowTokenSymbol}</p>
                 <p className={`font-bold ${simulationResult.netProfit >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                   Net Profit/Loss: <span className="font-mono">{simulationResult.netProfit.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span> {simBorrowTokenSymbol}
                 </p>
@@ -398,7 +565,7 @@ const FlashLoansPage = () => {
           </CardFooter>
         </Card>
 
-        {/* Advanced Simulation Setup (Local Fork) Section */}
+        {/* Advanced Simulation Setup (Local Fork) Section - No changes here */}
         <Collapsible>
           <CollapsibleTrigger asChild>
             <Button variant="outline" className="w-full justify-between">
