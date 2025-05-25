@@ -1,66 +1,69 @@
 
 import { useState } from "react";
-import { 
-  Send, 
-  Download, 
-  Check, 
-  Info 
-} from "lucide-react";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { Send, Download, Check } from "lucide-react";
+import { EtherscanTransaction } from "@/services/etherscan";
+import { useEthereum } from "@/hooks/use-ethereum";
+import { ethers } from "ethers";
 
 interface TransactionRowProps {
-  hash: string;
-  type: "send" | "receive";
-  status: "pending" | "confirmed" | "failed";
-  from: string;
-  to: string;
-  amount: string;
-  symbol: string;
-  timestamp: string;
-  gasUsed?: string;
+  transaction: EtherscanTransaction;
   onViewReceipt: () => void;
 }
 
 const TransactionRow: React.FC<TransactionRowProps> = ({
-  hash,
-  type,
-  status,
-  from,
-  to,
-  amount,
-  symbol,
-  timestamp,
-  gasUsed,
+  transaction,
   onViewReceipt,
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
+  const { walletState } = useEthereum();
+  const currentUserAddress = walletState.address?.toLowerCase();
+
+  const {
+    hash,
+    from,
+    to,
+    value,
+    timeStamp,
+    gasUsed,
+    isError,
+    // txreceipt_status, // Can be used for more precise status if needed
+  } = transaction;
 
   const formatAddress = (address: string) => {
+    if (!address) return "N/A";
     return `${address.substring(0, 6)}...${address.substring(address.length - 4)}`;
   };
 
+  const txType = from.toLowerCase() === currentUserAddress ? "send" : "receive";
+  
+  // isError '0' means no error, '1' means error.
+  // txreceipt_status '1' means success, '0' means failure (for post-Byzantium transactions)
+  // For txlist, isError is usually sufficient for basic success/failure indication.
+  const status: "confirmed" | "failed" = isError === "0" ? "confirmed" : "failed";
+
+  const amount = ethers.utils.formatEther(value);
+  const symbol = "ETH"; // Assuming ETH for now
+  const formattedTimestamp = new Date(parseInt(timeStamp) * 1000).toLocaleString();
+
   const statusColors = {
-    pending: "text-yellow-500",
     confirmed: "text-green-500",
     failed: "text-red-500",
+    // pending: "text-yellow-500", // Not typically derived from txlist
   };
 
   return (
-    <div 
+    <div
       className="border-b border-border last:border-0 p-3 hover:bg-secondary/20 transition-colors cursor-pointer"
       onClick={() => setIsExpanded(!isExpanded)}
     >
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-3">
-          <div className={`p-2 rounded-full ${
-            type === "send" ? "bg-red-500/10" : "bg-green-500/10"
-          }`}>
-            {type === "send" ? (
+          <div
+            className={`p-2 rounded-full ${
+              txType === "send" ? "bg-red-500/10" : "bg-green-500/10"
+            }`}
+          >
+            {txType === "send" ? (
               <Send size={16} className="text-red-500" />
             ) : (
               <Download size={16} className="text-green-500" />
@@ -68,14 +71,15 @@ const TransactionRow: React.FC<TransactionRowProps> = ({
           </div>
           <div>
             <p className="font-medium text-sm">
-              {type === "send" ? "Sent" : "Received"} {symbol}
+              {txType === "send" ? "Sent" : "Received"} {symbol}
             </p>
-            <p className="text-xs text-muted-foreground">{timestamp}</p>
+            <p className="text-xs text-muted-foreground">{formattedTimestamp}</p>
           </div>
         </div>
         <div className="text-right">
           <p className="font-medium">
-            {type === "send" ? "-" : "+"}{amount} {symbol}
+            {txType === "send" ? "-" : "+"}
+            {parseFloat(amount).toFixed(6)} {symbol} {/* Show more precision */}
           </p>
           <p className={`text-xs ${statusColors[status]}`}>
             {status.charAt(0).toUpperCase() + status.slice(1)}
@@ -100,11 +104,11 @@ const TransactionRow: React.FC<TransactionRowProps> = ({
           {gasUsed && (
             <div className="flex justify-between">
               <span className="text-muted-foreground">Gas Used:</span>
-              <span>{gasUsed}</span>
+              <span>{ethers.BigNumber.from(gasUsed).toString()}</span> {/* Format gasUsed */}
             </div>
           )}
           <div className="flex justify-end mt-2">
-            <button 
+            <button
               className="text-gold hover:underline text-sm flex items-center"
               onClick={(e) => {
                 e.stopPropagation();
