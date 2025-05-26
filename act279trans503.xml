@@ -1,0 +1,97 @@
+<Document xmlns="urn:iso:std:iso:20022:tech:xsd:pacs.008.001.10">
+	<FIToFICstmrCdtTrf>
+		<GrpHdr>
+			<MsgId>EETINB/201120/CCT/USD/001</MsgId>
+			<CreDtTm>2024-11-20T13:10:10</CreDtTm>
+			<NbOfTxs>1</NbOfTxs>
+			<CtrlSum>9983242.00</CtrlSum>
+			<SttlmInf>
+				<SttlmMtd>COVE</SttlmMtd>
+				<InstgRmbrsmntAgt>
+					<FinInstnId>
+						<BICFI>EETINB</BICFI>
+					</FinInstnId>
+				</InstgRmbrsmntAgt>
+				<InstdRmbrsmntAgt>
+					<FinInstnId>
+						<BICFI/>
+					</FinInstnId>
+				</InstdRmbrsmntAgt>
+			</SttlmInf>
+			<InstgAgt>
+				<FinInstnId>
+					<BICFI>EETINB</BICFI>
+				</FinInstnId>
+			</InstgAgt>
+			<InstdAgt>
+				<FinInstnId>
+					<BICFI/>
+				</FinInstnId>
+			</InstdAgt>
+		</GrpHdr>
+		<CdtTrfTxInf>
+			<PmtId>
+				<InstrId>AVRAPISDE9983242</InstrId>
+				<EndToEndId>EETINB/02831595/20241120</EndToEndId>
+				<TxId>S1607/AVR/TINB/BAB/9M/USD</TxId>
+			</PmtId>
+			<PmtTpInf>
+				<InstrPrty>NORM</InstrPrty>
+			</PmtTpInf>
+			<IntrBkSttlmAmt Ccy="USD">9983242</IntrBkSttlmAmt>
+			<IntrBkSttlmDt>2024-11-20</IntrBkSttlmDt>
+			<ChrgBr>SHAR</ChrgBr>
+			<Dbtr>
+				<Nm>The indigenous Nations Bank</Nm>
+				<PstlAdr>
+					<StrtNm>Elder Center</StrtNm>
+					<BldgNb>4</BldgNb>
+					<PstCd>T0L1Y0</PstCd>
+					<TwnNm>Treaty 7 Territory</TwnNm>
+					<Ctry>CA</Ctry>
+					<AdrLine>Corn Exchange 5th Floor</AdrLine>
+				</PstlAdr>
+			</Dbtr>
+			<DbtrAcct>
+				<Id>
+					<Othr>
+						<Id>241208186283</Id>
+					</Othr>
+				</Id>
+			</DbtrAcct>
+			<DbtrAgt>
+				<FinInstnId>
+					<BICFI/>
+				</FinInstnId>
+			</DbtrAgt>
+			<CdtrAgt>
+				<FinInstnId>
+					<BICFI/>
+				</FinInstnId>
+			</CdtrAgt>
+			<Cdtr>
+				<Nm>PT SURYA DIGITAL EXCHANGE</Nm>
+				<PstlAdr>
+					<StrtNm>JL TAMAN CILANDAK II D7 CILANDAK</StrtNm>
+					<BldgNb>D7</BldgNb>
+					<PstCd>CILANDAK</PstCd>
+					<TwnNm>JAKARTA</TwnNm>
+					<Ctry>ID</Ctry>
+				</PstlAdr>
+			</Cdtr>
+			<CdtrAcct>
+				<Id>
+					<Othr>
+						<Id>034001003850309</Id>
+					</Othr>
+				</Id>
+			</CdtrAcct>
+			<Purp>
+				<Cd>GDDS</Cd>
+			</Purp>
+			<RmtInf>
+				<Ustrd>Loan for Investment</Ustrd>
+			</RmtInf>
+		</CdtTrfTxInf>
+	</FIToFICstmrCdtTrf>
+</Document>
