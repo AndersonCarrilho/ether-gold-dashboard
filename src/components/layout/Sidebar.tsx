@@ -24,7 +24,8 @@ import {
   Coins,
   HardDrive,
   FileText,
-  Zap, // Added Zap icon for Flash Loans
+  Zap,
+  FileUp, // Added FileUp icon for SWIFT Processor
 } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 
@@ -72,7 +73,12 @@ const sidebarItems = [
   {
     title: "Flash Loans",
     href: "/flashloans",
-    icon: Zap, // Using Zap icon
+    icon: Zap,
+  },
+  {
+    title: "SWIFT Processor",
+    href: "/swift-processor",
+    icon: FileUp, // Using FileUp icon
   },
 ];
 
