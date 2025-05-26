@@ -13,6 +13,8 @@ import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 import HardhatSim from "./pages/HardhatSim";
 import FinMT from "./pages/FinMT";
+import FlashLoansPage from "./pages/FlashLoans";
+import SwiftFileProcessorPage from "./pages/SwiftFileProcessorPage"; // Import the new SWIFT Processor page
 import { useEffect } from "react";
 
 const queryClient = new QueryClient();
@@ -38,6 +40,8 @@ const App = () => {
             <Route path="/settings" element={<Settings />} />
             <Route path="/hardhat" element={<HardhatSim />} />
             <Route path="/fin-mt" element={<FinMT />} />
+            <Route path="/flashloans" element={<FlashLoansPage />} />
+            <Route path="/swift-processor" element={<SwiftFileProcessorPage />} /> {/* Add route for SWIFT Processor */}
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

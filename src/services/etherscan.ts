@@ -1,6 +1,7 @@
 
 import axios from "axios";
 import { ethers } from "ethers";
+import { loadEtherscanApiKey } from '@/lib/settingsStorage'; // Import for loading API key
 
 // Base URL and types
 const ETHERSCAN_BASE = 'https://api.etherscan.io/api';
@@ -64,9 +65,31 @@ export class EtherscanService {
   private apiKey: string;
   private baseUrl: string;
 
-  constructor(config: EtherscanConfig) {
-    this.apiKey = config.apiKey;
-    this.baseUrl = config.baseUrl || ETHERSCAN_BASE;
+  constructor(config?: Partial<EtherscanConfig>) { // Made config optional
+    const storedUserApiKey = loadEtherscanApiKey();
+    const envApiKey = import.meta.env.VITE_ETHERSCAN_API_KEY;
+    const configApiKey = config?.apiKey;
+    const placeholderApiKey = 'YOUR_ETHERSCAN_API_KEY';
+
+    if (storedUserApiKey && storedUserApiKey.trim() !== '') {
+      this.apiKey = storedUserApiKey;
+      console.log("Using Etherscan API key from localStorage.");
+    } else if (envApiKey && typeof envApiKey === 'string' && envApiKey.trim() !== '') {
+      this.apiKey = envApiKey;
+      console.log("Using Etherscan API key from environment variable (VITE_ETHERSCAN_API_KEY).");
+    } else if (configApiKey && configApiKey.trim() !== '') {
+      this.apiKey = configApiKey;
+      console.log("Using Etherscan API key from constructor config.");
+    } else {
+      this.apiKey = placeholderApiKey;
+      console.warn(
+        "Using placeholder Etherscan API key. " +
+        "Please set your key in Settings, via the VITE_ETHERSCAN_API_KEY environment variable, " +
+        "or pass it in the service constructor for optimal Etherscan functionality."
+      );
+    }
+    
+    this.baseUrl = config?.baseUrl || ETHERSCAN_BASE;
   }
 
   // Get nonce for an address
